@@ -83,13 +83,15 @@ ember/
 13-dimensional:
 
 ```
-X = [pos(3), vel(3), quat(4), omega(3)]
-     x y z    vx vy vz  q0 q1 q2 q3  wx wy wz
+X = [pos(3), quat(4), vel(3), omega(3)]
+     x y z   qx qy qz qw  vx vy vz  wx wy wz
+     0 1 2   3  4  5  6   7  8  9   10 11 12
 ```
 
 - Position and velocity in world frame, meters and m/s
-- Attitude as unit quaternion (q0 scalar-first convention)
+- Attitude as unit quaternion, **scalar-last** convention `[x, y, z, w]` (w at index 6)
 - Angular velocity in body frame, rad/s
+- Slices: `pos = X[..., 0:3]`, `quat = X[..., 3:7]`, `vel = X[..., 7:10]`, `omega = X[..., 10:13]`
 
 `dynamics()` returns `X_dot` — the integrator owns the update step, not the dynamics function.
 
