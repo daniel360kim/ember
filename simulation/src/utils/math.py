@@ -6,6 +6,9 @@ def quat_identity():
 def quat_inv(q):
     return torch.cat([-q[..., :3], q[..., 3:]], dim=-1)
 
+def normalize_quat(q):
+    return q / q.norm(dim=-1, keepdim=True)
+
 def quat_mul(q1, q2):
     x1, y1, z1, w1 = q1.unbind(-1)
     x2, y2, z2, w2 = q2.unbind(-1)

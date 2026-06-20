@@ -15,7 +15,8 @@ dependencies = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/rocket_tvc"]
+packages = ["src/utils", "src/vehicle", "src/scripts"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["src"]

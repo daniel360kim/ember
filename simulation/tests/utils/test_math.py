@@ -151,8 +151,3 @@ def test_deriv_norm_rate():
     omega = torch.tensor([0.3, 0.7, 1.2])
     dq = quat_deriv(q, omega)
     assert abs(torch.dot(q, dq).item()) < 1e-6
-
-def normalize_quat(q):
-    q_new = q.clone()
-    q_new = q_new / q_new.norm(dim=-1, keepdim=True)
-    return q_new

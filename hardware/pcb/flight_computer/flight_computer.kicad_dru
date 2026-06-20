@@ -1,0 +1,9 @@
+(version 1)
+
+(rule "bmp388_pad_clearance"
+  (constraint clearance (min 0.1mm))
+  (condition "A.Reference == 'U4' && B.Reference == 'U4'"))
+
+(rule "imu_pad_clearance"
+  (constraint clearance (min 0.1mm))
+  (condition "A.Reference == 'U5' && B.Reference == 'U5'"))

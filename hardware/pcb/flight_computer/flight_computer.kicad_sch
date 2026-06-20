@@ -1459,6 +1459,16 @@
 	)
 	(wire
 		(pts
+			(xy 64.77 138.43) (xy 95.25 138.43)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "0e7407f1-0264-4c66-b9a2-38ca8834edfa")
+	)
+	(wire
+		(pts
 			(xy 72.39 187.96) (xy 97.79 187.96)
 		)
 		(stroke
@@ -1486,6 +1496,26 @@
 			(type default)
 		)
 		(uuid "17c30a8a-b4bb-491d-9bbf-6666d6e70f07")
+	)
+	(wire
+		(pts
+			(xy 64.77 168.91) (xy 95.25 168.91)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "18a29850-d79a-4d67-9294-01d4b672f02d")
+	)
+	(wire
+		(pts
+			(xy 64.77 166.37) (xy 95.25 166.37)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "1b657623-87af-4812-b02f-a7182eb3d767")
 	)
 	(wire
 		(pts
@@ -1619,16 +1649,6 @@
 	)
 	(wire
 		(pts
-			(xy 64.77 168.91) (xy 95.25 168.91)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "31153fe7-8155-4881-b8f8-0be71287214c")
-	)
-	(wire
-		(pts
 			(xy 193.04 91.44) (xy 217.17 91.44)
 		)
 		(stroke
@@ -1749,13 +1769,13 @@
 	)
 	(wire
 		(pts
-			(xy 64.77 138.43) (xy 95.25 138.43)
+			(xy 200.66 151.13) (xy 213.36 151.13)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "54482cc3-72eb-46b1-854d-b257221d4684")
+		(uuid "544f7eeb-660c-46df-a424-92b26439896b")
 	)
 	(wire
 		(pts
@@ -1869,13 +1889,13 @@
 	)
 	(wire
 		(pts
-			(xy 193.04 123.19) (xy 207.01 123.19)
+			(xy 200.66 148.59) (xy 213.36 148.59)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "80ae7bb0-4820-4a0a-946d-629d685b64dc")
+		(uuid "806fece3-dbbf-49a8-8816-8f965215fee8")
 	)
 	(wire
 		(pts
@@ -2069,16 +2089,6 @@
 	)
 	(wire
 		(pts
-			(xy 64.77 166.37) (xy 95.25 166.37)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "b4a17b59-324e-4dc7-8d57-0b39d668de8b")
-	)
-	(wire
-		(pts
 			(xy 233.68 156.21) (xy 233.68 153.67)
 		)
 		(stroke
@@ -2099,13 +2109,13 @@
 	)
 	(wire
 		(pts
-			(xy 171.45 147.32) (xy 181.61 147.32)
+			(xy 64.77 135.89) (xy 95.25 135.89)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "b6f74e7d-688b-4c96-a1b2-23d2597c2ee3")
+		(uuid "b85c452a-f8c3-4d1c-bfad-de3a29054087")
 	)
 	(wire
 		(pts
@@ -2219,26 +2229,6 @@
 	)
 	(wire
 		(pts
-			(xy 171.45 149.86) (xy 181.61 149.86)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "cbfb291d-32fc-42fc-afa1-b0669b396c32")
-	)
-	(wire
-		(pts
-			(xy 200.66 151.13) (xy 213.36 151.13)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "cc266f75-cf64-450a-84e8-c7f042b4e1c3")
-	)
-	(wire
-		(pts
 			(xy 115.57 92.71) (xy 152.4 92.71)
 		)
 		(stroke
@@ -2299,16 +2289,6 @@
 	)
 	(wire
 		(pts
-			(xy 64.77 135.89) (xy 95.25 135.89)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "d5bc5bf0-e248-427c-9ad2-0f3f43524640")
-	)
-	(wire
-		(pts
 			(xy 217.17 62.23) (xy 233.68 62.23)
 		)
 		(stroke
@@ -2356,26 +2336,6 @@
 			(type default)
 		)
 		(uuid "db5ab490-7efa-4655-a79e-aab3a8eaa8a8")
-	)
-	(wire
-		(pts
-			(xy 193.04 120.65) (xy 207.01 120.65)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "dead39a6-cd63-4dac-a216-574445d05bec")
-	)
-	(wire
-		(pts
-			(xy 200.66 148.59) (xy 213.36 148.59)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "e301a0ab-d800-4669-a321-9e8dfc35b0da")
 	)
 	(wire
 		(pts
@@ -2537,16 +2497,6 @@
 		)
 		(uuid "27087f63-e365-4390-ad24-ff7109301374")
 	)
-	(label "GPIO_1"
-		(at 207.01 120.65 180)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "2b933a3e-218f-480d-9279-e53b2ed851f8")
-	)
 	(label "FIRE_1"
 		(at 134.62 114.3 0)
 		(effects
@@ -2568,7 +2518,7 @@
 		(uuid "30ad17e1-bc6a-4a2a-8e4c-fe7789324894")
 	)
 	(label "SCL"
-		(at 200.66 151.13 0)
+		(at 200.66 148.59 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -2576,16 +2526,6 @@
 			(justify left bottom)
 		)
 		(uuid "342ddc01-e692-445c-b213-836325702db3")
-	)
-	(label "GPIO_1"
-		(at 181.61 147.32 180)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "38706d8f-ad0f-4bde-b3dc-f8f579ba545f")
 	)
 	(label "TX_GPS"
 		(at 237.49 151.13 180)
@@ -2687,16 +2627,6 @@
 		)
 		(uuid "8b29727f-4d12-470a-ba18-44a840f9d2a8")
 	)
-	(label "GPIO_2"
-		(at 207.01 123.19 180)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "928c4958-a8b3-4e74-b788-05482c620f1a")
-	)
 	(label "CS_BARO"
 		(at 207.01 78.74 180)
 		(effects
@@ -2737,16 +2667,6 @@
 		)
 		(uuid "a093b294-f583-4b64-ac8e-ba6d915a5a1d")
 	)
-	(label "GPIO_2"
-		(at 181.61 149.86 180)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "a8c91a74-5053-4396-9f35-b63001a84dab")
-	)
 	(label "CE_NRF"
 		(at 207.01 63.5 180)
 		(effects
@@ -2778,7 +2698,7 @@
 		(uuid "b3b93bfa-5d19-49e4-9ead-c5eb56b7a12a")
 	)
 	(label "SDA"
-		(at 200.66 148.59 0)
+		(at 200.66 151.13 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3480,86 +3400,6 @@
 			(project "flight_computer"
 				(path "/97739cb3-517e-4f70-8350-1cb198e6b8e6"
 					(reference "#PWR076")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Connector_Generic:Conn_01x02")
-		(at 166.37 149.86 180)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "39f1c742-289d-46f0-a1e8-d5ceb323b7ab")
-		(property "Reference" "J8"
-			(at 166.37 140.97 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "Conn_01x02"
-			(at 166.37 143.51 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical"
-			(at 166.37 149.86 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 166.37 149.86 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "Generic connector, single row, 01x02, script generated (kicad-library-utils/schlib/autogen/connector/)"
-			(at 166.37 149.86 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "2"
-			(uuid "e5a3e664-6488-46b8-b1b6-36804865606b")
-		)
-		(pin "1"
-			(uuid "591c2694-1890-4ea5-a6f7-bb2c948c695f")
-		)
-		(instances
-			(project "flight_computer"
-				(path "/97739cb3-517e-4f70-8350-1cb198e6b8e6"
-					(reference "J8")
 					(unit 1)
 				)
 			)
@@ -4889,26 +4729,6 @@
 				(justify left)
 			)
 		)
-		(pin "GPIO_1" bidirectional
-			(at 193.04 120.65 0)
-			(uuid "5a442e63-ecbf-4345-83e8-2c6f4e8024a7")
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-			)
-		)
-		(pin "GPIO_2" bidirectional
-			(at 193.04 123.19 0)
-			(uuid "5910a422-e3e1-4c1d-875c-08ce787bb13b")
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-			)
-		)
 		(instances
 			(project "flight_computer"
 				(path "/97739cb3-517e-4f70-8350-1cb198e6b8e6"
@@ -4996,7 +4816,7 @@
 			)
 		)
 		(pin "PYRO+" output
-			(at 95.25 135.89 180)
+			(at 95.25 138.43 180)
 			(uuid "cb7c0a07-4ab8-4ad4-af6d-8733a293f883")
 			(effects
 				(font
@@ -5006,7 +4826,7 @@
 			)
 		)
 		(pin "PYRO-" output
-			(at 95.25 138.43 180)
+			(at 95.25 135.89 180)
 			(uuid "4a4bb818-5364-400d-bf31-ec4320ecc345")
 			(effects
 				(font
@@ -5542,7 +5362,7 @@
 			)
 		)
 		(pin "PYRO+" output
-			(at 95.25 166.37 180)
+			(at 95.25 168.91 180)
 			(uuid "611aa81f-c6f8-4e79-8c30-0871ea1593fa")
 			(effects
 				(font
@@ -5552,7 +5372,7 @@
 			)
 		)
 		(pin "PYRO-" output
-			(at 95.25 168.91 180)
+			(at 95.25 166.37 180)
 			(uuid "5444a881-2891-442f-848b-01cb7fce88d8")
 			(effects
 				(font
