@@ -6,7 +6,7 @@ class BaseVehicle(ABC):
         pass
     
     @abstractmethod
-    def dynamics(X: torch.tensor, U, t: float):
+    def dynamics(self, X: torch.tensor, U, t: float):
         pass
     
     

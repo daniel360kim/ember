@@ -8,6 +8,38 @@ gimbal on a real model rocket.
 See `CLAUDE.md` for the state vector convention, design rules, and learning
 roadmap. This file documents the project layout.
 
+## Installation
+
+Requires Python 3.10+.
+
+```bash
+git clone https://github.com/daniel360kim/ember.git
+cd ember/simulation
+pip install -e .
+```
+
+This installs `torch`, `numpy`, and `matplotlib` per `pyproject.toml`, and
+puts `src/` on the path (via `pythonpath = ["src"]` in the pytest config,
+and editable install for everything else) so `from vehicle.atlas_v1 import
+Atlas`-style imports resolve without manual `PYTHONPATH` juggling.
+
+## Running the current 1D simulation
+
+The current sim is a single-vehicle vertical (z-axis) drop/boost test, not
+yet wired to the config-driven runners described below. It lives in
+[src/runners/test_runner.py](src/runners/test_runner.py):
+
+```bash
+python src/runners/test_runner.py
+```
+
+This builds an `Atlas` vehicle ([src/vehicle/atlas_v1.py](src/vehicle/atlas_v1.py)),
+integrates its 13D state with `euler_step` for 5 seconds at `dt=0.001`, and
+plots z-position over time with matplotlib. Edit the `TestRunner(duration,
+dt)` call at the bottom of the file to change the rollout length or step
+size, and swap `solver = euler_step` for `rk4_step` to change integration
+scheme.
+
 ## Project Structure
 
 ```
@@ -40,8 +72,17 @@ ember/
 │   └── utils/
 │       └── math.py             # quaternions, rotations
 │
-├── scripts/
-│   └── train.py                # entry point
+├── runners/
+│   ├── train_runner.py         # entry point: runs diffsim training
+│   └── eval_runner.py          # loads a trained policy, rolls it out on
+│                                # fresh random ICs, no training — sanity
+│                                # checks performance/robustness pre-hardware
+│
+├── visualization/
+│   └── plots.py                 # trajectory, attitude error, thrust curve,
+│                                 # etc. — reusable functions, no script-level
+│                                 # state. Imported by runners, called when
+│                                 # a `--plot` flag is passed.
 │
 ├── tests/
 │   └── test_gradient_flow.py   # finite difference checks
@@ -115,10 +156,32 @@ Physics, rocket-specific.
   `dynamics()`. Scalar-last `[x, y, z, w]` convention throughout — matches
   the state vector's `quat = X[3:7]` slice.
 
-## `scripts/train.py`
+## `runners/`
 
-Entry point. Loads the three configs, builds the vehicle + policy +
-trainer, runs training, logs to wandb.
+Two distinct entry points — training a policy and evaluating one are
+different concerns and shouldn't share a script.
+
+- **`train_runner.py`** — loads the three configs, builds the vehicle +
+  policy + trainer, runs the differentiable training loop, logs to wandb.
+  Saves policy checkpoints.
+- **`eval_runner.py`** — loads a saved policy checkpoint and the same
+  configs, rolls it out (no gradient updates) over a batch of fresh random
+  initial conditions to check attitude-error performance and robustness
+  under domain randomization before anything touches hardware. This is
+  sim-only policy evaluation, not a pytest-style correctness check — those
+  live in `tests/`.
+
+Both runners accept an optional `--plot` flag that, if set, calls into
+`visualization/` after the rollout(s) finish rather than plotting inline.
+
+## `visualization/plots.py`
+
+Reusable plotting functions, not a script — `runners/` import from here.
+Each function takes a rollout's `X` history (and optionally `U`, loss
+terms) and returns a figure: trajectory (3D position), attitude error over
+time, angular rates, thrust curve, gimbal commanded vs. actual deflection.
+Kept separate from the runners so the same plotting code works whether
+you're inspecting a training run or an eval run.
 
 ## `tests/test_gradient_flow.py`
 
