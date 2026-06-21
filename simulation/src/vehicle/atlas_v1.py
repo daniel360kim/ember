@@ -44,8 +44,7 @@ class Atlas(BaseVehicle):
         
         return torch.cat((velocity, q_deriv, accel, ang_accel))
     
-    # For plotting for now
-    def get_current_mass(self, t):
+    def get_mass(self, t):
         motor_mass = self.motor.get_mass(t)
         return motor_mass + self.vehicle_mass
         

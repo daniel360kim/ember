@@ -4,11 +4,12 @@ import matplotlib.pyplot as plt
 
 from vehicle.atlas_v1 import Atlas
 from vehicle.integrators import euler_step, rk4_step
+from vehicle.state import State
+from runners.history import SimulationHistory
 class TestRunner:
     def __init__(self, duration: float, dt: float):
         self.duration = duration
         self.dt = dt
-        
         self.current_time = 0.0
         
         
@@ -17,31 +18,27 @@ class TestRunner:
         X_current[6] = 1
         vehicle = Atlas()
         solver = rk4_step
-        positions = []
-        velocities = []
-        masses = []
+        history = SimulationHistory()
+        
         while self.current_time <= self.duration:
-            X_current = solver(vehicle.dynamics, X_current, None, torch.tensor(self.current_time), self.dt)
-            vehicle_mass = vehicle.get_current_mass(torch.tensor(self.current_time))
-            
-            positions.append(X_current[0:3].detach().numpy())
-            velocities.append(X_current[7:10].detach().numpy())
-            masses.append(vehicle_mass)
-            
+            time_t = torch.tensor(self.current_time)
+            X_current = solver(vehicle.dynamics, X_current, None, time_t, self.dt)
+            state = vehicle.get_state(X_current, time_t)
+            history.add(state)
             self.current_time += self.dt
         
-        return positions, velocities, masses
+        return history
             
 
 if __name__ == "__main__":
     duration = 5
     runner = TestRunner(duration, dt=0.001)
 
-    positions, velocities, masses = runner.run()
+    history = runner.run()
     
-    positions = np.array(positions)
-    velocities = np.array(velocities)
-    masses = np.array(masses)
+    positions = history.get_position_history()
+    velocities = history.get_velocity_history()
+    masses = history.get_mass_history()
 
     apogee = np.max(positions[:,2])
 
