@@ -40,6 +40,6 @@ def quat_deriv(q, omega):
     """Assumes omega in body frame"""
     
     # q: [x, y, z, w], omega: body-frame angular velocity [3]
-    omega_pure = torch.cat([omega, torch.zeros(1, dtype=omega.dtype)])
+    omega_pure = torch.cat([omega, torch.zeros(*omega.shape[:-1], 1, dtype=omega.dtype)], dim=-1)
     return 0.5 * quat_mul(q, omega_pure)
 

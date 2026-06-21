@@ -23,10 +23,10 @@ class Aero:
         Returns the drag force in Newtons
         """
         
-        orientation_quat = X[3:7]
-        velocity = X[7:10]
+        orientation_quat = X[..., 3:7]
+        velocity = X[..., 7:10]
         
-        speed = torch.norm(velocity)
+        speed = torch.norm(velocity, dim=-1, keepdim=True)
         v_hat = velocity / (speed + 1e-8)
         
         area = self._get_cross_sectional_area(orientation_quat, velocity)
@@ -44,12 +44,12 @@ class Aero:
         Returns: the angle of attack in radians
         """
         
-        up = torch.tensor([0., 0, 1.])
+        up = torch.tensor([0., 0, 1.]).expand(*orientation_quat.shape[:-1], 3)
         body_axis = quat_rotate(orientation_quat, up)
 
-        v_hat = velocity / (torch.norm(velocity) + 1e-8)
+        v_hat = velocity / (torch.norm(velocity, dim=-1, keepdim=True) + 1e-8)
         
-        return torch.arccos(torch.clamp(torch.dot(body_axis, v_hat), min=-1.0, max=1.0))
+        return torch.arccos(torch.clamp(torch.sum(body_axis * v_hat, dim=-1, keepdim=True), min=-1.0, max=1.0))
     
     def _get_cross_sectional_area(self, orientation_quat: torch.tensor, velocity: torch.tensor) -> torch.tensor:
         """

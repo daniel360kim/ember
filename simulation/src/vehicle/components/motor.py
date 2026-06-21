@@ -54,9 +54,9 @@ class Motor:
         offset2 = -13.3993963436209
         offset3 = 149084.795253397
 
-        c1 = (t >= 0) & (t < 0.386)
-        c2 = (t >= 0.386) & (t < 3.25)
-        c3 = (t >= 3.25) & (t <= 3.4)
+        c1 = (t >= 0.063) & (t < 0.386)
+        c2 = (t >= 0.386) & (t < 3.35)
+        c3 = (t >= 3.35) & (t <= 3.4)
 
         impulse_cum = torch.zeros_like(t)
         impulse_cum = torch.where(c1, P1, impulse_cum)

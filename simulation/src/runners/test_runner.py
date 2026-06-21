@@ -11,7 +11,7 @@ class TestRunner:
     def __init__(self, duration: float, dt: float, config_path: str):
         self.duration = duration
         self.dt = dt
-        self.current_time = 0.0
+        self.current_time = torch.full((100, 1), 0.0)
         
         vehicle_config = VehicleConfig.from_yaml(config_path)
         self.vehicle = build_vehicle(vehicle_config)
@@ -19,15 +19,15 @@ class TestRunner:
         
         
     def run(self):
-        X_current = torch.zeros(13)
-        X_current[6] = 1
+        X_current = torch.zeros(100, 13)
+        X_current[..., 6] = 1
         solver = rk4_step
         history = SimulationHistory()
         
-        while self.current_time <= self.duration:
-            time_t = torch.tensor(self.current_time)
-            state = self.vehicle.get_state(X_current, time_t)
-            X_current = solver(self.vehicle.dynamics, X_current, None, time_t, self.dt)
+        while torch.all(self.current_time <= self.duration):
+
+            state = self.vehicle.get_state(X_current, self.current_time)
+            X_current = solver(self.vehicle.dynamics, X_current, None, self.current_time, self.dt)
             history.add(state)
             self.current_time += self.dt
         
@@ -35,15 +35,15 @@ class TestRunner:
             
 
 if __name__ == "__main__":
-    duration = 0.3
+    duration = 7
     runner = TestRunner(duration, dt=0.001, config_path="configs/vehicles/atlas.yaml")
 
     history = runner.run()
     
-    positions = history.get_position_history()
-    velocities = history.get_velocity_history()
-    masses = history.get_extra_history(key="total_mass")
-    thrusts = history.get_extra_history(key="thrust")
+    positions = history.get_position_history()[:,0]
+    velocities = history.get_velocity_history()[:,0]
+    masses = history.get_extra_history(key="total_mass")[:,0]
+    thrusts = history.get_extra_history(key="thrust")[:,0]
     apogee = np.max(positions[:,2])
     
 
