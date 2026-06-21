@@ -1,0 +1,14 @@
+vehicle_mass: 1.0
+drag_coeff: 0.35
+air_density: 1.225
+motor: f15
+
+nose_cone:
+  type: conical
+  length: 0.25
+  radius: 0.09
+
+body_tube:
+  type: cylinder
+  length: 0.91
+  radius: 0.09

@@ -27,8 +27,10 @@ class SimulationHistory:
     def get_angular_velocity_history(self):
         return np.stack([state.angular_velocity.detach().cpu().numpy() for state in self.states])
     
-    def get_mass_history(self):
-        return np.array([state.mass.detach().cpu().numpy() for state in self.states])
+    def get_extra_history(self, key: str):
+        return np.stack([state.extras[key].detach().cpu().numpy() for state in self.states])
+
+        
         
         
     

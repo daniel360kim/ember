@@ -2,28 +2,32 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 
-from vehicle.atlas_v1 import Atlas
+from vehicle.atlas_v1 import Atlas, build_vehicle
+from vehicle.config import VehicleConfig
 from vehicle.integrators import euler_step, rk4_step
-from vehicle.state import State
 from runners.history import SimulationHistory
+
 class TestRunner:
-    def __init__(self, duration: float, dt: float):
+    def __init__(self, duration: float, dt: float, config_path: str):
         self.duration = duration
         self.dt = dt
         self.current_time = 0.0
+        
+        vehicle_config = VehicleConfig.from_yaml(config_path)
+        self.vehicle = build_vehicle(vehicle_config)
+        
         
         
     def run(self):
         X_current = torch.zeros(13)
         X_current[6] = 1
-        vehicle = Atlas()
         solver = rk4_step
         history = SimulationHistory()
         
         while self.current_time <= self.duration:
             time_t = torch.tensor(self.current_time)
-            X_current = solver(vehicle.dynamics, X_current, None, time_t, self.dt)
-            state = vehicle.get_state(X_current, time_t)
+            state = self.vehicle.get_state(X_current, time_t)
+            X_current = solver(self.vehicle.dynamics, X_current, None, time_t, self.dt)
             history.add(state)
             self.current_time += self.dt
         
@@ -31,20 +35,21 @@ class TestRunner:
             
 
 if __name__ == "__main__":
-    duration = 5
-    runner = TestRunner(duration, dt=0.001)
+    duration = 0.3
+    runner = TestRunner(duration, dt=0.001, config_path="configs/vehicles/atlas.yaml")
 
     history = runner.run()
     
     positions = history.get_position_history()
     velocities = history.get_velocity_history()
-    masses = history.get_mass_history()
-
+    masses = history.get_extra_history(key="total_mass")
+    thrusts = history.get_extra_history(key="thrust")
     apogee = np.max(positions[:,2])
+    
 
     print(f"Rocket reached apogee of {apogee} m")
     
-    fig, (ax1, ax2, ax3) = plt.subplots(nrows=3, ncols=1)
+    fig, (ax1, ax2, ax3, ax4) = plt.subplots(nrows=4)
 
     ax1.plot(np.linspace(0, duration, len(positions[:,2])), positions[:,2])
     ax1.set_xlabel('Time (s)')
@@ -57,6 +62,10 @@ if __name__ == "__main__":
     ax3.plot(np.linspace(0, duration, len(masses)), masses)
     ax3.set_xlabel('Time (s)')
     ax3.set_ylabel('Vehicle mass (kg)')
+    
+    ax4.plot(np.linspace(0, duration, len(thrusts)), thrusts)
+    ax4.set_xlabel('Time (s)')
+    ax4.set_ylabel('Thrust (N)')
     
     plt.tight_layout()
     plt.show()

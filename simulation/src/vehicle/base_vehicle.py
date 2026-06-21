@@ -11,13 +11,13 @@ class BaseVehicle(ABC):
     def dynamics(self, X: torch.tensor, U, t: float) -> torch.tensor:
         pass
     
-    @abstractmethod
-    def get_mass(self, t: torch.tensor) -> torch.tensor:
-        pass
+    # Extra parameters we want to report back (mass, thrust, etc.)
+    def get_extras(self, t: torch.tensor) -> dict[str, torch.tensor]:
+        return {}
     
     def get_state(self, X: torch.tensor, t: torch.tensor):
-        mass = self.get_mass(t)
-        return State.from_tensor(X, mass)
+        extras = self.get_extras(t)
+        return State.from_tensor(X, extras=extras)
         
         
     
