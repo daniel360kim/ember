@@ -1,20 +1,35 @@
 import torch
 import numpy as np
-from vehicle.config import NoseConeConfig
-from vehicle.config import BodyTubeConfig
+from vehicle.config import NoseConeConfig, BodyTubeConfig, LocationConfig, MomentInertiaConfig
 
-from utils.math import quat_rotate
+from utils.math import quat_rotate, quat_inv
 
 class Aero:
-    def __init__(self, drag_coeff: float, air_density: float, nose_cone_config: NoseConeConfig, body_tube_config: BodyTubeConfig):
+    def __init__(self, 
+                 drag_coeff: float, 
+                 air_density: float, 
+                 nose_cone_config: NoseConeConfig, body_tube_config: BodyTubeConfig,
+                 cp: LocationConfig,
+                 mmoi: MomentInertiaConfig
+                 ):
         self.drag_coeff = drag_coeff
         self.air_density = air_density
         self.nose_cone_config = nose_cone_config
         self.body_tube_config = body_tube_config
+        
+        self.cp = torch.tensor([cp.x, cp.y, cp.z])
+        
+        self.I = torch.diag(torch.tensor([mmoi.Ixx, mmoi.Iyy, mmoi.Izz]))
     
-    def get_drag_force(self, X: torch.tensor, t: torch.tensor) -> torch.tensor:
+    def get_dynamics(self, X: torch.tensor, t: torch.tensor, cg: torch.tensor) -> tuple[torch.tensor, torch.tensor]:
+        drag_force = self._get_drag_force(X, t)
+        torque = self._get_torque(X, t, drag_force, cg)
+        
+        return drag_force, torque
+    
+    def _get_drag_force(self, X: torch.tensor, t: torch.tensor) -> torch.tensor:
         """
-        Gets the drag force based on the rocket state
+        Gets the drag force based on the rocket state in world frame
         
         Args:
             X: tensor holding the vehicle dynamics
@@ -31,8 +46,14 @@ class Aero:
         
         area = self._get_cross_sectional_area(orientation_quat, velocity)
         return -0.5 * self.air_density * self.drag_coeff * speed**2 * area * v_hat
-        
     
+    def _get_torque(self, X: torch.tensor, t: torch.tensor, drag_force: torch.tensor, cg: torch.tensor) -> torch.tensor:
+        lever_arm = self._get_lever_arm(cg) # (B, 3)
+        world_to_body = quat_inv(X[..., 3:7]) # world to body quaternion
+        drag_body = quat_rotate(world_to_body, drag_force)
+        
+        return torch.cross(lever_arm, drag_body, dim=-1)
+        
     def _get_attack_angle(self, orientation_quat: torch.tensor, velocity: torch.tensor) -> torch.tensor:
         """
         Get the angle of attack in radians used to calculate drag
@@ -74,7 +95,9 @@ class Aero:
         end_cap_projection = torch.where(angle_of_attack <= threshold, end_cap_projection_low, end_cap_projection_high)
         
         return body_tube_projection + end_cap_projection
-        
+    
+    def _get_lever_arm(self, cg: torch.tensor) -> torch.tensor:
+        return self.cp - cg[...,:]
         
         
     

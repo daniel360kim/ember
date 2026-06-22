@@ -35,7 +35,23 @@ def quat_to_euler(q):
 
     return torch.stack([roll, pitch, yaw], dim=-1)
 
-    
+
+def euler_to_quat(euler):
+    """Convert roll/pitch/yaw (radians) to quaternion [x, y, z, w]"""
+    roll, pitch, yaw = euler.unbind(-1)
+
+    cr, sr = torch.cos(roll * 0.5), torch.sin(roll * 0.5)
+    cp, sp = torch.cos(pitch * 0.5), torch.sin(pitch * 0.5)
+    cy, sy = torch.cos(yaw * 0.5), torch.sin(yaw * 0.5)
+
+    x = sr * cp * cy - cr * sp * sy
+    y = cr * sp * cy + sr * cp * sy
+    z = cr * cp * sy - sr * sp * cy
+    w = cr * cp * cy + sr * sp * sy
+
+    return torch.stack([x, y, z, w], dim=-1)
+
+
 def quat_deriv(q, omega):
     """Assumes omega in body frame"""
     
