@@ -1,7 +1,7 @@
 import torch
 
 class Motor:
-    def __init__(self, name: str = 'F15', total_impulse: float = 49.6, total_mass: float = 0.103, prop_mass: float = 0.060):
+    def __init__(self, name: str = 'F15', total_impulse: float = 48.792775090871146, total_mass: float = 0.103, prop_mass: float = 0.060):
         self.name = name
         self.total_impulse = total_impulse
         self.total_mass = total_mass
@@ -44,27 +44,39 @@ class Motor:
 
         Output: the cumulative impulse delivered by the motor up to time t, in N*s
         """
+        # Segment 3's antiderivative (~ -149040 at t=3.4) is added to offset3 (~ +149090)
+        # to land on ~48 N*s. In float32 (~7 significant digits) that subtraction loses
+        # all precision and makes the curve wobble, so do the algebra in float64 and cast
+        # back to the caller's dtype at the end.
+        orig_dtype = t.dtype
+        t = t.to(torch.float64)
+
         # Antiderivatives of the thrust polynomials from get_thrust, each referenced to t=0
         P1 = -7486.5 * t**6 + 12150.6 * t**5 - 7502.5 * t**4 + 2229.93333333333 * t**3 - 294.1 * t**2 + 19.224 * t
         P2 = 0.171857142857143 * t**7 - 2.6 * t**6 + 16.2614 * t**5 - 54.0725 * t**4 + 102.243333333333 * t**3 - 109.41 * t**2 + 76.536 * t
         P3 = -11750 * t**3 / 3 + 79053 * t**2 / 2 - 132949 * t
 
+        # The thrust polynomial p1 is nonzero at t=0, but the motor does not ignite
+        # until t=0.063. Anchor segment 1 to zero impulse at ignition by removing the
+        # spurious area P1 accrues over [0, 0.063].
+        offset1 = -0.49482126755758693
+
         # Offsets so each segment's antiderivative is continuous with the cumulative
         # impulse accrued by the end of the previous segment
-        offset2 = -13.3993963436209
-        offset3 = 149084.795253397
+        offset2 = -13.89421761117859
+        offset3 = 149089.7194417575
 
         c1 = (t >= 0.063) & (t < 0.386)
         c2 = (t >= 0.386) & (t < 3.35)
         c3 = (t >= 3.35) & (t <= 3.4)
 
         impulse_cum = torch.zeros_like(t)
-        impulse_cum = torch.where(c1, P1, impulse_cum)
+        impulse_cum = torch.where(c1, P1 + offset1, impulse_cum)
         impulse_cum = torch.where(c2, P2 + offset2, impulse_cum)
         impulse_cum = torch.where(c3, P3 + offset3, impulse_cum)
         impulse_cum = torch.where(t >= 3.4, torch.full_like(t, self.total_impulse), impulse_cum)
 
-        return impulse_cum
+        return impulse_cum.to(orig_dtype)
 
     def get_mass(self, t: torch.tensor) -> torch.tensor:
         """

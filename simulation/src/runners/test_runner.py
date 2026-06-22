@@ -21,7 +21,7 @@ class TestRunner:
         
         
     def run(self):
-        start_orientation = euler_to_quat(torch.tensor([0, np.deg2rad(10), 0]))
+        start_orientation = euler_to_quat(torch.tensor([np.deg2rad(3), np.deg2rad(10), np.deg2rad(0)]))
         X_current = torch.zeros(1, 13)
         X_current[..., 3:7] = start_orientation
         solver = rk4_step
@@ -64,9 +64,9 @@ if __name__ == "__main__":
     ax[0, 0].set_xlabel('Time (s)')
     ax[0, 0].set_ylabel('Position (m)')
     
-    ax[1, 0].plot(np.linspace(0, duration, len(orientations[:,0])), orientations[:,0], label="Roll")
-    ax[1, 0].plot(np.linspace(0, duration, len(orientations[:,0])), orientations[:,1], label="Pitch")
-    ax[1, 0].plot(np.linspace(0, duration, len(orientations[:,0])), orientations[:,2], label="Yaw")
+    ax[1, 0].plot(np.linspace(0, duration, len(orientations[:,0])), orientations[:,0], label="X")
+    ax[1, 0].plot(np.linspace(0, duration, len(orientations[:,1])), orientations[:,1], label="Y")
+    ax[1, 0].plot(np.linspace(0, duration, len(orientations[:,2])), orientations[:,2], label="Z")
     ax[1, 0].legend()
     ax[1, 0].set_title('Orientation')
     ax[1, 0].set_xlabel('Time (s)')

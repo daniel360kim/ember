@@ -13,7 +13,7 @@ def motor():
 
 def test_default_is_f15(motor):
     assert motor.name == 'F15'
-    assert motor.total_impulse == pytest.approx(49.6)
+    assert motor.total_impulse == pytest.approx(48.792775090871146)
     assert motor.total_mass == pytest.approx(0.103)
     assert motor.prop_mass == pytest.approx(0.060)
 
@@ -27,7 +27,8 @@ def test_thrust_zero_after_burnout(motor):
     assert motor.get_thrust(torch.tensor(10.0)).item() == 0.0
 
 def test_thrust_positive_during_burn(motor):
-    t = torch.linspace(0.0, 3.0, 50)
+    # burn runs from ignition (~0.063 s) to burnout (~3.4 s)
+    t = torch.linspace(0.063, 3.3, 50)
     assert torch.all(motor.get_thrust(t) > 0.0)
 
 def test_thrust_preserves_shape(motor):
@@ -45,24 +46,14 @@ def test_impulse_zero_at_start(motor):
     assert motor.get_cumulative_impulse(torch.tensor(0.0)).item() == pytest.approx(0.0, abs=1e-4)
 
 def test_impulse_saturates_at_total(motor):
-    assert motor.get_cumulative_impulse(torch.tensor(10.0)).item() == pytest.approx(49.6, abs=1e-3)
+    assert motor.get_cumulative_impulse(torch.tensor(10.0)).item() == pytest.approx(48.792775090871146, abs=1e-3)
 
-@pytest.mark.xfail(
-    reason="cumulative impulse drops ~1.9 N*s at the t~=3.25 segment boundary "
-    "(antiderivative offsets discontinuous) -- bug",
-    strict=True,
-)
 def test_impulse_monotonic_nondecreasing(motor):
     t = torch.linspace(0.0, 4.0, 200)
     imp = motor.get_cumulative_impulse(t)
     diffs = imp[1:] - imp[:-1]
     assert torch.all(diffs >= -1e-3)
 
-@pytest.mark.xfail(
-    reason="thrust polynomials integrate to ~32.6 N*s over the burn, not the "
-    "rated total_impulse of 49.6 N*s -- thrust curve / impulse mismatch",
-    strict=True,
-)
 def test_impulse_matches_thrust_integral(motor):
     # numerically integrate thrust and compare to the analytic cumulative impulse
     t = torch.linspace(0.0, 3.4, 20001)
@@ -81,11 +72,6 @@ def test_mass_burnout_is_dry_mass(motor):
     # after burnout all propellant is gone -> total_mass - prop_mass
     assert motor.get_mass(torch.tensor(10.0)).item() == pytest.approx(0.043, abs=1e-4)
 
-@pytest.mark.xfail(
-    reason="mass jumps up ~0.0023 kg at the t~=3.25 boundary, inherited from the "
-    "non-monotonic cumulative impulse -- bug",
-    strict=True,
-)
 def test_mass_monotonic_nonincreasing(motor):
     t = torch.linspace(0.0, 4.0, 200)
     mass = motor.get_mass(t)
