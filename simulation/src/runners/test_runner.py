@@ -21,7 +21,7 @@ class TestRunner:
         
         
     def run(self):
-        start_orientation = euler_to_quat(torch.tensor([np.deg2rad(3), np.deg2rad(10), np.deg2rad(0)]))
+        start_orientation = euler_to_quat(torch.tensor([np.deg2rad(0), np.deg2rad(0), np.deg2rad(0)]))
         X_current = torch.zeros(1, 13)
         X_current[..., 3:7] = start_orientation
         solver = rk4_step

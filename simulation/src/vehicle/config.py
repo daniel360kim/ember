@@ -1,6 +1,13 @@
 from dataclasses import dataclass
 import yaml
 
+
+@dataclass
+class AeroConfig:
+    air_density: float
+    drag_coeff: float
+    normal_force_coeff: float
+    pitch_damping_coeff: float
 @dataclass
 class LocationConfig:
     x: float
@@ -30,9 +37,8 @@ class BodyTubeConfig:
 @dataclass
 class VehicleConfig:
     vehicle_mass: float
-    drag_coeff: float
-    air_density: float
     motor: str
+    aero: AeroConfig
     cg: LocationConfig
     cp: LocationConfig
     mmoi: MomentInertiaConfig
@@ -46,8 +52,7 @@ class VehicleConfig:
             data = yaml.safe_load(f)
         return cls(vehicle_mass = data["vehicle_mass"],
                    motor = data["motor"],
-                   drag_coeff = data["drag_coeff"],
-                   air_density = data["air_density"],
+                   aero = AeroConfig(**data["aero"]),
                    cg = LocationConfig(**data["cg"]),
                    cp = LocationConfig(**data["cp"]),
                    mmoi = MomentInertiaConfig(**data["mmoi"]),

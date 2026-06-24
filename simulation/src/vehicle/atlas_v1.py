@@ -74,8 +74,7 @@ class Atlas(BaseVehicle):
         
 def build_vehicle(config: VehicleConfig) -> Atlas:
     motor = Motor() # TODO allow for different motors from a registry
-    aero = Aero(drag_coeff=config.drag_coeff, 
-                air_density = config.air_density, 
+    aero = Aero(aero=config.aero,
                 nose_cone_config=config.nose_cone, body_tube_config=config.body_tube, 
                 cp=config.cp, mmoi=config.mmoi)
     
