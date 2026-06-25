@@ -1,5 +1,10 @@
-vehicle_mass: 1.0
-motor: f15
+vehicle_mass_dry: 1.0
+propellant_mass: 0.060
+
+motor:
+  propellant_mass: 0.060
+  total_impulse: 48.792775090871146
+  total_mass: 0.103
 
 aero:
   air_density: 1.225
@@ -7,10 +12,15 @@ aero:
   normal_force_coeff: 2
   pitch_damping_coeff: -0.1
 
-cg:
+cg_wet:
   x: 0
   y: 0
   z: 0.45
+
+cg_dry:
+  x: 0
+  y: 0
+  z: 0.55
 
 cp:
   x: 0

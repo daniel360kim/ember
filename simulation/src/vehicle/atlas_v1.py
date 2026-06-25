@@ -10,7 +10,7 @@ from utils.math import quat_deriv, quat_rotate
 G = 9.80665 # todo, move to config file 
 
 class Atlas(BaseVehicle):
-    def __init__(self, vehicle_mass: float, motor: Motor, aero: Aero, mmoi: MomentInertiaConfig, cg: LocationConfig):
+    def __init__(self, vehicle_mass: float, motor: Motor, aero: Aero, mmoi: MomentInertiaConfig, cg_wet: LocationConfig, cg_dry: LocationConfig):
         super().__init__()
         
         self.vehicle_mass = vehicle_mass
@@ -20,7 +20,7 @@ class Atlas(BaseVehicle):
         self.I = torch.diag(torch.tensor([mmoi.Ixx, mmoi.Iyy, mmoi.Izz]))
         self.I_inv = torch.linalg.inv(self.I)
         
-        self.cg = torch.tensor([cg.x, cg.y, cg.z])
+        self.cg = torch.tensor([cg_wet.x, cg_wet.y, cg_wet.z])
         
         
     def dynamics(self, X: torch.tensor, U: torch.tensor, t: torch.tensor):
@@ -60,6 +60,7 @@ class Atlas(BaseVehicle):
         gyro = torch.cross(angular_vel, I_omega, dim=-1)
         net_torque = net_torque - gyro
         return net_torque @ self.I_inv.T
+
         
     def get_extras(self, t):
         motor_mass = self.motor.get_mass(t)
@@ -73,11 +74,11 @@ class Atlas(BaseVehicle):
         }
         
 def build_vehicle(config: VehicleConfig) -> Atlas:
-    motor = Motor() # TODO allow for different motors from a registry
+    motor = Motor(name="F15", total_impulse=config.motor.total_impulse, total_mass=config.motor.total_mass, prop_mass=config.motor.propellant_mass) # TODO allow for different motors from a registry
     aero = Aero(aero=config.aero,
                 nose_cone_config=config.nose_cone, body_tube_config=config.body_tube, 
                 cp=config.cp, mmoi=config.mmoi)
     
-    return Atlas(config.vehicle_mass, motor=motor, aero=aero, mmoi=config.mmoi, cg=config.cg)
+    return Atlas(config.vehicle_mass, motor=motor, aero=aero, mmoi=config.mmoi, cg_wet=config.cg_wet, cg_dry=config.cg_dry)
     
     

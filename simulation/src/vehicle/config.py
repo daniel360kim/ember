@@ -1,6 +1,11 @@
 from dataclasses import dataclass
 import yaml
 
+@dataclass
+class MotorConfig:
+    propellant_mass: float
+    total_impulse: float
+    total_mass: float
 
 @dataclass
 class AeroConfig:
@@ -37,9 +42,10 @@ class BodyTubeConfig:
 @dataclass
 class VehicleConfig:
     vehicle_mass: float
-    motor: str
+    motor: MotorConfig
     aero: AeroConfig
-    cg: LocationConfig
+    cg_wet: LocationConfig
+    cg_dry: LocationConfig
     cp: LocationConfig
     mmoi: MomentInertiaConfig
     nose_cone: NoseConeConfig | None = None
@@ -51,9 +57,10 @@ class VehicleConfig:
         with open(path) as f:
             data = yaml.safe_load(f)
         return cls(vehicle_mass = data["vehicle_mass"],
-                   motor = data["motor"],
+                   motor = MotorConfig(**data["motor"]),
                    aero = AeroConfig(**data["aero"]),
-                   cg = LocationConfig(**data["cg"]),
+                   cg_wet = LocationConfig(**data["cg_wet"]),
+                   cg_dry = LocationConfig(**data["cg_dry"]),
                    cp = LocationConfig(**data["cp"]),
                    mmoi = MomentInertiaConfig(**data["mmoi"]),
                    nose_cone = NoseConeConfig(**data["nose_cone"]) if "nose_cone" in data else None,
