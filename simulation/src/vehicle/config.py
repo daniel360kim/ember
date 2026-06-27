@@ -1,11 +1,6 @@
 from dataclasses import dataclass
 import yaml
 
-@dataclass
-class MotorConfig:
-    propellant_mass: float
-    total_impulse: float
-    total_mass: float
     
 @dataclass
 class AeroConfig:
@@ -45,6 +40,13 @@ class GimbalConfig:
     gimbal_location: LocationConfig
     
 @dataclass
+class MotorConfig:
+    propellant_mass: float
+    total_impulse: float
+    total_mass: float
+    motor_location: LocationConfig
+    
+@dataclass
 class VehicleConfig:
     vehicle_mass: float
     motor: MotorConfig
@@ -63,7 +65,12 @@ class VehicleConfig:
         with open(path) as f:
             data = yaml.safe_load(f)
         return cls(vehicle_mass = data["vehicle_mass_dry"],
-                   motor = MotorConfig(**data["motor"]),
+                   motor = MotorConfig(
+                       propellant_mass = data["motor"]["propellant_mass"],
+                       total_impulse = data["motor"]["total_impulse"],
+                       total_mass = data["motor"]["total_mass"],
+                       motor_location = LocationConfig(**data["motor"]["location"])
+                    ),
                    aero = AeroConfig(**data["aero"]),
                    cg_wet = LocationConfig(**data["cg_wet"]),
                    cg_dry = LocationConfig(**data["cg_dry"]),

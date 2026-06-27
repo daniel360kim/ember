@@ -4,10 +4,16 @@ motor:
   propellant_mass: 0.060
   total_impulse: 48.792775090871146
   total_mass: 0.103
+  # Location relative to the very bottom of the rocket
+  location: 
+    x: 0
+    y: 0
+    z: 0.057
 
 gimbal:
   tau: 0.1
   angle_limit_deg: 5
+  # Location of the pivot axids
   gimbal_location:
     x: 0
     y: 0
@@ -21,15 +27,16 @@ aero:
   normal_force_coeff: 2
   pitch_damping_coeff: -0.1
 
+# Relative to the very bottom of the rocket
 cg_wet:
   x: 0
   y: 0
-  z: 0.45
+  z: 0.531
 
 cg_dry:
   x: 0
   y: 0
-  z: 0.55
+  z: 0.558
 
 cp:
   x: 0

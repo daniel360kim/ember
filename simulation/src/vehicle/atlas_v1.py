@@ -11,47 +11,55 @@ from utils.math import quat_deriv, quat_rotate, quat_inv
 G = 9.80665 # todo, move to config file 
 
 class Atlas(BaseVehicle):
-    def __init__(self, vehicle_mass: float, gimbal: CartesianGimbal, aero: Aero, mmoi: MomentInertiaConfig, cg_wet: LocationConfig, cg_dry: LocationConfig):
+    def __init__(self, mass_airframe: float, gimbal: CartesianGimbal, aero: Aero, mmoi: MomentInertiaConfig, cg_wet: LocationConfig, cg_dry: LocationConfig):
         super().__init__()
         
-        self.vehicle_mass = vehicle_mass
+        self.mass_airframe = mass_airframe
         self.gimbal = gimbal
         self.aero = aero
         
         self.I = torch.diag(torch.tensor([mmoi.Ixx, mmoi.Iyy, mmoi.Izz]))
         self.I_inv = torch.linalg.inv(self.I)
         
-        self.cg = torch.tensor([cg_wet.x, cg_wet.y, cg_wet.z])
+        self.cg_wet = torch.tensor([cg_wet.x, cg_wet.y, cg_wet.z])
+        self.cg_dry = torch.tensor([cg_dry.x, cg_dry.y, cg_dry.z])
         
+        mass_motor_dry =  self.gimbal.motor.total_mass - self.gimbal.motor.prop_mass
+        self.mass_dry_total = mass_airframe + mass_motor_dry # Vehicle + motor casing (no prop)
+        self.mass_wet_total = self.mass_dry_total + self.gimbal.motor.prop_mass # Everyhting including prop
+        
+        # Center of gravity of the propellant
+        self.cg_prop = (self.mass_wet_total * self.cg_wet - self.mass_dry_total * self.cg_dry) / self.gimbal.motor.prop_mass # (3)
         
     def dynamics(self, X: torch.tensor, U: torch.tensor, t: torch.tensor):
-        motor_mass = self.gimbal.motor.get_mass(t)
+        mass_motor_current = self.gimbal.motor.get_mass(t)
         
-        total_mass = motor_mass + self.vehicle_mass        
+        mass_total_current = mass_motor_current + self.mass_airframe  
         position = X[..., 0:3]
         velocity = X[..., 7:10]
         orientation_quat = X[..., 3:7]
         ang_vel = X[..., 10:13]
         gimbal_angle = X[..., 13:15]
         
+        cg = self.get_cg(mass_motor_current, t)
         aero_wrench = self.aero.get_wrench(X, t)
         gimbal_wrench = self.gimbal.get_wrench(X, t)
         
         wrenches = [aero_wrench, gimbal_wrench]
         
         # Net force
-        F_grav = torch.cat([torch.zeros_like(total_mass), torch.zeros_like(total_mass), -total_mass * G], dim=-1)
+        F_grav = torch.cat([torch.zeros_like(mass_total_current), torch.zeros_like(mass_total_current), -mass_total_current * G], dim=-1)
         F_net = F_grav + sum(wrench.force_world for wrench in wrenches)
         
         # Net torque
         torque = sum(
-            torch.cross(wrench.application_point_body - self.cg,
+            torch.cross(wrench.application_point_body - cg,
                         quat_rotate(quat_inv(orientation_quat), wrench.force_world),
                         dim=-1)
             for wrench in wrenches if wrench.application_point_body is not None
         ) + sum(w.moment_body for w in wrenches if w.moment_body is not None)
 
-        accel = F_net / total_mass
+        accel = F_net / mass_total_current
         
         ang_accel = self._get_ang_accel(angular_vel=ang_vel, net_torque=torque)
         
@@ -65,7 +73,7 @@ class Atlas(BaseVehicle):
         q_deriv = quat_deriv(orientation_quat, X[..., 10:13])
         
         # Gimbal dynamics
-        gimbal_delta = self.gimbal.dynamics(gimbal_state=gimbal_angle, torque_cmd=U, cg=self.cg, t=t)
+        gimbal_delta = self.gimbal.dynamics(gimbal_state=gimbal_angle, torque_cmd=U, cg=cg, t=t)
         
         return torch.cat((velocity, q_deriv, accel, ang_accel, gimbal_delta), dim=-1)
     
@@ -74,16 +82,27 @@ class Atlas(BaseVehicle):
         gyro = torch.cross(angular_vel, I_omega, dim=-1)
         net_torque = net_torque - gyro
         return net_torque @ self.I_inv.T
+    
+    def get_cg(self, mass_motor_current: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
+        cg_dry = self.cg_dry.expand(*t.shape[:-1], 3)
+        
+        mass_prop_current = self.gimbal.motor.get_prop_mass(t)
+        
+        mass_total_current = mass_motor_current + self.mass_airframe
+        return (self.mass_dry_total * cg_dry + mass_prop_current * self.cg_prop) / mass_total_current
 
     def get_extras(self, t):
-        motor_mass = self.gimbal.motor.get_mass(t)
-        total_mass = motor_mass + self.vehicle_mass
+        mass_motor_current = self.gimbal.motor.get_mass(t)
+        mass_total_current = mass_motor_current + self.mass_airframe
         
         thrust = self.gimbal.motor.get_thrust(t)
         
+        cg = self.get_cg(mass_motor_current, t)
+        
         return {
-            "total_mass": total_mass,
-            "thrust": thrust
+            "total_mass": mass_total_current,
+            "thrust": thrust,
+            "cg": cg,
         }
         
 def build_vehicle(config: VehicleConfig) -> Atlas:

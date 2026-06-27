@@ -48,6 +48,7 @@ class SimulationHistory:
     def get_extra_history(self, key: str):
         return np.stack([state.extras[key].detach().cpu().numpy() for state in self.states])
 
+
         
         
         

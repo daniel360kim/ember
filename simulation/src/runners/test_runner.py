@@ -76,6 +76,7 @@ if __name__ == "__main__":
     gimbal_angles = history.get_gimbal_angle_history()[:,0]
     masses = history.get_extra_history(key="total_mass")[:,0]
     thrusts = history.get_extra_history(key="thrust")[:,0]
+    cgs = history.get_extra_history(key="cg")[:,0]
     apogee = np.max(positions[:,2])
     
 
@@ -131,6 +132,11 @@ if __name__ == "__main__":
     ax[3, 0].set_title('Gimbal Angle')
     ax[3, 0].set_xlabel('Time (s)')
     ax[3, 0].set_ylabel('Angle (deg)')
+    
+    ax[3, 1].plot(np.linspace(0, duration, len(cgs[:,2])), cgs[:,2])
+    ax[3, 1].set_title('Center of gravity (z)')
+    ax[3, 1].set_xlabel('Time (s)')
+    ax[3, 1].set_ylabel('Cg (z) (m)')
     
     plt.tight_layout()
     plt.show()

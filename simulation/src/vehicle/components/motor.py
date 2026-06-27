@@ -82,6 +82,10 @@ class Motor:
         impulse_cum = self.get_cumulative_impulse(t)
         return torch.clamp(input=impulse_cum / self.total_impulse, min=0.0, max=1.0)
     
+    def get_prop_mass(self, t: torch.tensor) -> torch.Tensor:
+        fraction_burned = self.get_fraction_burned(t)
+        return self.prop_mass * (1 - fraction_burned)
+    
     def get_mass(self, t: torch.tensor) -> torch.tensor:
         """
         Calculate the current mass of the rocket motor at time t.
@@ -91,10 +95,10 @@ class Motor:
 
         Output: the current rocket motor mass
         """
-        fraction_burned = self.get_fraction_burned(t)
-        m_prop_remaining = self.prop_mass * (1 - fraction_burned)
+        m_prop_remaining = self.get_prop_mass(t)
 
         return (self.total_mass - self.prop_mass) + m_prop_remaining
+    
     
         
         
