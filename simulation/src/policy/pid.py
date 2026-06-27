@@ -38,7 +38,7 @@ class PID(Policy):
         self.i_accum = torch.clamp(self.i_accum + error.detach() * self.dt,
                                 -self.i_limit, self.i_limit)         # out-of-place + windup (#3,#4)
 
-        return torch.zeros_like(error)
+        return self.Kp * error + self.Ki * self.i_accum - self.Kd * w_b[..., :2]
 
         
             
