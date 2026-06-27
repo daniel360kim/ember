@@ -24,6 +24,9 @@ class SimulationHistory:
         orientation_history = torch.stack([np.rad2deg(quat_to_euler(state.orientation_quat.detach().cpu())) for state in self.states])
         return orientation_history.numpy()
 
+    def get_gimbal_angle_history(self):
+        return np.stack([np.rad2deg(state.gimbal_angle.detach().cpu().numpy()) for state in self.states])
+    
     def get_tilt_history(self):
         """Attitude as tilt-from-vertical (zenith) and heading, both in degrees.
 

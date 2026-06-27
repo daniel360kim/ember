@@ -65,7 +65,7 @@ class Atlas(BaseVehicle):
         q_deriv = quat_deriv(orientation_quat, X[..., 10:13])
         
         # Gimbal dynamics
-        gimbal_delta = self.gimbal.dynamics(gimbal_state=gimbal_angle, gimbal_cmd=gimbal_angle)
+        gimbal_delta = self.gimbal.dynamics(gimbal_state=gimbal_angle, torque_cmd=U, cg=self.cg, t=t)
         
         return torch.cat((velocity, q_deriv, accel, ang_accel, gimbal_delta), dim=-1)
     

@@ -1,16 +1,20 @@
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 
 from vehicle.atlas_v1 import Atlas, build_vehicle
 from vehicle.config import VehicleConfig
 from vehicle.integrators import euler_step, rk4_step
+
+from policy.base_policy import Policy
+from policy.pid import PID
 from runners.history import SimulationHistory
 
-from utils.math import euler_to_quat
+from utils.math import euler_to_quat, quat_identity
 
 class TestRunner:
-    def __init__(self, duration: float, dt: float, config_path: str):
+    def __init__(self, duration: float, dt: float, config_path: str, policy: Policy, policy_dt: float):
         self.duration = duration
         self.dt = dt
         self.current_time = torch.full((1, 1), 0.0)
@@ -18,30 +22,50 @@ class TestRunner:
         vehicle_config = VehicleConfig.from_yaml(config_path)
         self.vehicle = build_vehicle(vehicle_config)
         
+        self.policy = policy
+        
+        if policy_dt < dt:
+            raise ValueError(f"policy_dt ({policy_dt}) must be >= sim dt ({dt})")
+        ratio = policy_dt / dt
+        if abs(ratio - round(ratio)) > 1e-9:
+            raise ValueError(f"policy_dt ({policy_dt}) must be an integer multiple of dt ({dt})")
+        self.steps_per_policy = round(ratio)
+        self.current_steps_taken = 0
+        
+        
         
     def run(self):
-        start_orientation = euler_to_quat(torch.tensor([np.deg2rad(0), np.deg2rad(0), np.deg2rad(0)]))
+        start_orientation = euler_to_quat(torch.tensor([np.deg2rad(3), np.deg2rad(5), np.deg2rad(0)]))
         X_current = torch.zeros(1, 15)
         X_current[..., 3:7] = start_orientation
-        
-        X_current[..., 13] = np.deg2rad(0.1) # x axis gimbal tilt
-        
+    
         solver = rk4_step
         history = SimulationHistory()
         
-        while torch.all(self.current_time <= self.duration):
+        U = torch.zeros(1, 2) # zero commanded
+        setpoint = quat_identity().expand(1, 4) # upright
+        total_steps = int(round(self.duration / self.dt)) + 1
+        with tqdm(total=total_steps, desc="Simulating", unit="step") as pbar:
+            while torch.all(self.current_time <= self.duration):
 
-            state = self.vehicle.get_state(X_current, self.current_time)
-            X_current = solver(self.vehicle.dynamics, X_current, None, self.current_time, self.dt)
-            history.add(state)
-            self.current_time += self.dt
-        
+                state = self.vehicle.get_state(X_current, self.current_time)
+                if self.current_steps_taken % self.steps_per_policy == 0:
+                    U = self.policy.forward(X_current, setpoint)
+
+                X_current = solver(self.vehicle.dynamics, X_current, U, self.current_time, self.dt)
+
+
+                history.add(state)
+                self.current_time += self.dt
+                pbar.update(1)
+
         return history
             
 
 if __name__ == "__main__":
-    duration = 7
-    runner = TestRunner(duration, dt=0.001, config_path="configs/vehicles/atlas.yaml")
+    duration = 3.4
+    policy = PID(dt=0.01)
+    runner = TestRunner(duration, dt=0.001, config_path="configs/vehicles/atlas.yaml", policy=policy, policy_dt=0.01)
 
     history = runner.run()
     
@@ -49,6 +73,7 @@ if __name__ == "__main__":
     velocities = history.get_velocity_history()[:,0]
     orientations = history.get_orientation_euler_history()[:,0]
     angular_velocities = history.get_angular_velocity_history()[:,0]
+    gimbal_angles = history.get_gimbal_angle_history()[:,0]
     masses = history.get_extra_history(key="total_mass")[:,0]
     thrusts = history.get_extra_history(key="thrust")[:,0]
     apogee = np.max(positions[:,2])
@@ -56,7 +81,7 @@ if __name__ == "__main__":
 
     print(f"Rocket reached apogee of {apogee} m")
     
-    fig, ax = plt.subplots(nrows=3, ncols=2)
+    fig, ax = plt.subplots(nrows=4, ncols=2)
 
     ax[0, 0].plot(np.linspace(0, duration, len(positions[:,0])), positions[:,0], label="X")
     ax[0, 0].plot(np.linspace(0, duration, len(positions[:,1])), positions[:,1], label="Y")
@@ -99,6 +124,13 @@ if __name__ == "__main__":
     ax[2, 1].set_title('Motor thrust')
     ax[2, 1].set_xlabel('Time (s)')
     ax[2, 1].set_ylabel('Thrust (N)')
+    
+    ax[3, 0].plot(np.linspace(0, duration, len(gimbal_angles[:,0])), gimbal_angles[:,0], label="X")
+    ax[3, 0].plot(np.linspace(0, duration, len(gimbal_angles[:,1])), gimbal_angles[:,1], label="Y")
+    ax[3, 0].legend()
+    ax[3, 0].set_title('Gimbal Angle')
+    ax[3, 0].set_xlabel('Time (s)')
+    ax[3, 0].set_ylabel('Angle (deg)')
     
     plt.tight_layout()
     plt.show()

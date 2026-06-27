@@ -28,19 +28,16 @@ class CartesianGimbal(Component):
             moment_body=None,
         )
         
-    def dynamics(self, gimbal_state: torch.tensor, gimbal_cmd: torch.tensor):
-        """
-        Gets the change in angle which is integrated with the integrator with the other rocket dynamics
-        
-        Args:
-            gimbal_state (tensor): current angle of the gimbal (B, 2)
-            gimbal_cmd (tensor): the commanded angle of the gimbal (B, 2).
-        
-        Returns: a tensor representing the change in angle with time constant adjustment
-        """
+    def dynamics(self, gimbal_state, torque_cmd, cg, t):
+        moment_arm = torch.abs(self.gimbal_location[2] - cg[..., 2:3])  # L, (B,1)
+        inv = 1.0 / (self.motor.get_thrust(t) * moment_arm + 1e-8)      # guard burnout T→0
+        gimbal_cmd = torch.stack([
+            -torque_cmd[..., 1] * inv[..., 0],   # x_angle (δx) from -τy
+            torque_cmd[..., 0] * inv[..., 0],   # y_angle (δy) from  τx
+        ], dim=-1)
         gimbal_cmd = torch.clamp(gimbal_cmd, -self.max_deflection, self.max_deflection)
         return (gimbal_cmd - gimbal_state) / self.tau
-        
+
     def get_thrust_body(self, gimbal_state: torch.tensor, t: torch.tensor, ):
         thrust_magnitude = self.motor.get_thrust(t) # (B, 1)
         x_angle = gimbal_state[..., 0]
