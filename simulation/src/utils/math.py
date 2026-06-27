@@ -26,23 +26,31 @@ def quat_rotate(q, v):
     return v + 2.0 * qw * torch.cross(q_vec, v, dim=-1) + 2.0 * torch.cross(q_vec, torch.cross(q_vec, v, dim=-1), dim=-1)
 
 def quat_to_euler(q):
-    """Convert quaternion to roll/pitch/yaw in radians"""
+    """Convert quaternion to Euler angles (rotation about body X, Y, Z, in radians).
+
+    Z is the rocket's long axis (points up through the nose cone). Singular
+    when the Y-axis angle approaches +/-90 deg (see SimulationHistory.get_tilt_history
+    for a singularity-free alternative).
+    """
     x, y, z, w = q.unbind(-1)
 
-    roll  = torch.atan2(2*(w*x + y*z), 1 - 2*(x**2 + y**2))
-    pitch = torch.asin( 2*(w*y - z*x).clamp(-1, 1))
-    yaw   = torch.atan2(2*(w*z + x*y), 1 - 2*(y**2 + z**2))
+    x_rot = torch.atan2(2*(w*x + y*z), 1 - 2*(x**2 + y**2))
+    y_rot = torch.asin( 2*(w*y - z*x).clamp(-1, 1))
+    z_rot = torch.atan2(2*(w*z + x*y), 1 - 2*(y**2 + z**2))
 
-    return torch.stack([roll, pitch, yaw], dim=-1)
+    return torch.stack([x_rot, y_rot, z_rot], dim=-1)
 
 
 def euler_to_quat(euler):
-    """Convert roll/pitch/yaw (radians) to quaternion [x, y, z, w]"""
-    roll, pitch, yaw = euler.unbind(-1)
+    """Convert Euler angles (rotation about body X, Y, Z, in radians) to quaternion [x, y, z, w].
 
-    cr, sr = torch.cos(roll * 0.5), torch.sin(roll * 0.5)
-    cp, sp = torch.cos(pitch * 0.5), torch.sin(pitch * 0.5)
-    cy, sy = torch.cos(yaw * 0.5), torch.sin(yaw * 0.5)
+    Z is the rocket's long axis (points up through the nose cone).
+    """
+    x_rot, y_rot, z_rot = euler.unbind(-1)
+
+    cr, sr = torch.cos(x_rot * 0.5), torch.sin(x_rot * 0.5)
+    cp, sp = torch.cos(y_rot * 0.5), torch.sin(y_rot * 0.5)
+    cy, sy = torch.cos(z_rot * 0.5), torch.sin(z_rot * 0.5)
 
     x = sr * cp * cy - cr * sp * sy
     y = cr * sp * cy + sr * cp * sy

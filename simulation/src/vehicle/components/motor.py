@@ -91,7 +91,7 @@ class Motor:
 
         Output: the current rocket motor mass
         """
-        fraction_burned = self.get_fraction_burned()
+        fraction_burned = self.get_fraction_burned(t)
         m_prop_remaining = self.prop_mass * (1 - fraction_burned)
 
         return (self.total_mass - self.prop_mass) + m_prop_remaining

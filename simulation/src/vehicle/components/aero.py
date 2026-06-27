@@ -1,10 +1,11 @@
 import torch
 import numpy as np
-from vehicle.config import NoseConeConfig, BodyTubeConfig, AeroConfig, LocationConfig, MomentInertiaConfig
 
+from vehicle.components.base_component import Component, Wrench
+from vehicle.config import NoseConeConfig, BodyTubeConfig, AeroConfig, LocationConfig, MomentInertiaConfig
 from utils.math import quat_rotate, quat_inv
 
-class Aero:
+class Aero(Component):
     def __init__(self, 
                  aero: AeroConfig,
                  nose_cone_config: NoseConeConfig, body_tube_config: BodyTubeConfig,
@@ -23,24 +24,10 @@ class Aero:
         
         self.aoa_warned = False # printed a warning if aoa is greater than approximation threshold
         
-    
-    def get_dynamics(self, X: torch.tensor, t: torch.tensor, cg: torch.tensor) -> tuple[torch.tensor, torch.tensor]:
-        """
-        Gets the forces and torques acting on the rocket in world frame.
-        
-        Args:
-            X (tensor): the current rocket dynamics (B, 13)
-            t (tensor): the current time (B, 1)
-            cg (tensor): center of gravity location in the rocket
-            
-        Returns:
-            drag_force (tensor): drag force acting on the rocket in world frame in N (B, 3)
-            torque (tensor): torque force applied to rocket in body frame in Nm (B, 3)
-            
-        """
-        
+    def get_wrench(self, X: torch.tensor, t: torch.tensor) -> Wrench:
         orientation_quat = X[..., 3:7]
         velocity = X[..., 7:10]
+        angular_vel = X[..., 10:13]
         
         # Get unit body axis vector
         up = torch.tensor([0., 0, 1.]).expand(*orientation_quat.shape[:-1], 3)
@@ -50,13 +37,20 @@ class Aero:
         speed = torch.norm(velocity, dim=-1, keepdim=True)
         v_hat = velocity / (speed + 1e-8)
         
+        # Get net force in world frame
         drag_force = self._get_drag_force(b_hat, v_hat, speed, t)
         normal_force = self._get_normal_force(b_hat, v_hat, speed, t)
         net_force = drag_force + normal_force
-        torque = self._get_torque(X, t, net_force, cg, speed)
         
-        return net_force, torque
-    
+        # Damping from aero forces
+        damping_moment = self._get_damping_torque(angular_vel=angular_vel, speed=speed)
+        
+        return Wrench(
+            force_world=net_force,
+            application_point_body=self.cp.expand(*t.shape[:-1], 3), # Aero forces applied to CP
+            moment_body=damping_moment,
+        )
+        
     def _get_drag_force(self, b_hat: torch.tensor, v_hat: torch.tensor, speed: torch.tensor, t: torch.tensor) -> torch.tensor:
         """
         Gets the drag force based on the rocket state in world frame
@@ -90,34 +84,14 @@ class Aero:
         normal = b_hat - torch.sum(b_hat * v_hat, dim=-1, keepdim=True) * v_hat
         angle_of_attack = self._get_angle_of_attack(b_hat, v_hat)
         
+        # When vel = 0, angle of attack is 90 deg, so we also check speed 
         out_of_range = angle_of_attack > np.deg2rad(15.0)
-        if torch.any(out_of_range) and not self.aoa_warned:
+        if torch.any(out_of_range) and not self.aoa_warned and speed > 5:
             print("Warning: angle of attack greater than 15 violates Barrowman approximation")
             self.aoa_warned = True
         
         return 0.5 * self.aero_config.air_density * speed**2 * self.ref_area * self.aero_config.normal_force_coeff * normal
         
-        
-    def _get_torque(self, X: torch.tensor, t: torch.tensor, net_force: torch.tensor, cg: torch.tensor, speed: torch.tensor) -> torch.tensor:
-        """
-        Gets the torque applied to the rocket in body frame
-        
-        Args:
-            X (tensor): the current rocket dynamics (B, 13)
-            t: (tensor): the current time (B, 1)
-            net_force (tensor): the net force from the aerodynamic forces applied to CP (B, 3)
-            cg (tensor): the location of the center of gravity (B, 3)
-            speed (tensor): Current speed of rocket (B, 1)
-        """
-        
-        lever_arm = self._get_lever_arm(cg) # (B, 3)
-        world_to_body = quat_inv(X[..., 3:7]) # world to body quaternion
-        net_force_body = quat_rotate(world_to_body, net_force)
-        
-        aero_force_torque = torch.cross(lever_arm, net_force_body, dim=-1)
-        damping_torque = self._get_damping_torque(X[..., 10:13], speed)
-        
-        return aero_force_torque + damping_torque
     
     def _get_damping_torque(self, angular_vel: torch.tensor, speed: torch.tensor):
         """
@@ -163,9 +137,6 @@ class Aero:
         end_cap_projection = torch.where(angle_of_attack <= threshold, end_cap_projection_low, end_cap_projection_high)
         
         return body_tube_projection + end_cap_projection
-    
-    def _get_lever_arm(self, cg: torch.tensor) -> torch.tensor:
-        return self.cp - cg[...,:]
     
 
         

@@ -1,10 +1,19 @@
 vehicle_mass_dry: 1.0
 propellant_mass: 0.060
-
 motor:
   propellant_mass: 0.060
   total_impulse: 48.792775090871146
   total_mass: 0.103
+
+gimbal:
+  tau: 0.1
+  angle_limit_deg: 5
+  gimbal_location:
+    x: 0
+    y: 0
+    z: 0.05
+
+
 
 aero:
   air_density: 1.225

@@ -19,11 +19,13 @@ class TestRunner:
         self.vehicle = build_vehicle(vehicle_config)
         
         
-        
     def run(self):
         start_orientation = euler_to_quat(torch.tensor([np.deg2rad(0), np.deg2rad(0), np.deg2rad(0)]))
-        X_current = torch.zeros(1, 13)
+        X_current = torch.zeros(1, 15)
         X_current[..., 3:7] = start_orientation
+        
+        X_current[..., 13] = np.deg2rad(0.1) # x axis gimbal tilt
+        
         solver = rk4_step
         history = SimulationHistory()
         
@@ -72,9 +74,9 @@ if __name__ == "__main__":
     ax[1, 0].set_xlabel('Time (s)')
     ax[1, 0].set_ylabel('Orientation (deg)')
     
-    ax[1, 1].plot(np.linspace(0, duration, len(angular_velocities[:,0])), angular_velocities[:,0], label="Roll")
-    ax[1, 1].plot(np.linspace(0, duration, len(angular_velocities[:,0])), angular_velocities[:,1], label="Pitch")
-    ax[1, 1].plot(np.linspace(0, duration, len(angular_velocities[:,0])), angular_velocities[:,2], label="Yaw")
+    ax[1, 1].plot(np.linspace(0, duration, len(angular_velocities[:,0])), angular_velocities[:,0], label="X")
+    ax[1, 1].plot(np.linspace(0, duration, len(angular_velocities[:,0])), angular_velocities[:,1], label="Y")
+    ax[1, 1].plot(np.linspace(0, duration, len(angular_velocities[:,0])), angular_velocities[:,2], label="Z")
     ax[1, 1].legend()
     ax[1, 1].set_title('Ang. Velocity')
     ax[1, 1].set_xlabel('Time (s)')

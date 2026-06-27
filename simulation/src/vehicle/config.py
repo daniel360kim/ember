@@ -6,7 +6,7 @@ class MotorConfig:
     propellant_mass: float
     total_impulse: float
     total_mass: float
-
+    
 @dataclass
 class AeroConfig:
     air_density: float
@@ -38,7 +38,12 @@ class BodyTubeConfig:
     radius: float
     
 
-
+@dataclass
+class GimbalConfig:
+    tau: float
+    angle_limit_deg: float
+    gimbal_location: LocationConfig
+    
 @dataclass
 class VehicleConfig:
     vehicle_mass: float
@@ -48,6 +53,7 @@ class VehicleConfig:
     cg_dry: LocationConfig
     cp: LocationConfig
     mmoi: MomentInertiaConfig
+    gimbal_config: GimbalConfig
     nose_cone: NoseConeConfig | None = None
     body_tube: BodyTubeConfig | None = None
     
@@ -56,13 +62,18 @@ class VehicleConfig:
     def from_yaml(cls, path: str):
         with open(path) as f:
             data = yaml.safe_load(f)
-        return cls(vehicle_mass = data["vehicle_mass"],
+        return cls(vehicle_mass = data["vehicle_mass_dry"],
                    motor = MotorConfig(**data["motor"]),
                    aero = AeroConfig(**data["aero"]),
                    cg_wet = LocationConfig(**data["cg_wet"]),
                    cg_dry = LocationConfig(**data["cg_dry"]),
                    cp = LocationConfig(**data["cp"]),
                    mmoi = MomentInertiaConfig(**data["mmoi"]),
+                   gimbal_config = GimbalConfig(
+                       tau = data["gimbal"]["tau"],
+                       angle_limit_deg = data["gimbal"]["angle_limit_deg"],
+                       gimbal_location = LocationConfig(**data["gimbal"]["gimbal_location"]),
+                   ),
                    nose_cone = NoseConeConfig(**data["nose_cone"]) if "nose_cone" in data else None,
                    body_tube = BodyTubeConfig(**data["body_tube"]) if "body_tube" in data else None,
                    )
