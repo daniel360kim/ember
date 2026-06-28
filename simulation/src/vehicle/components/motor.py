@@ -1,12 +1,26 @@
 import torch
 
+from vehicle.config import MotorConfig
+
 class Motor:
-    def __init__(self, name: str = 'F15', total_impulse: float = 48.792775090871146, total_mass: float = 0.103, prop_mass: float = 0.060):
-        self.name = name
-        self.total_impulse = total_impulse
-        self.total_mass = total_mass
-        self.prop_mass = prop_mass
+    def __init__(self, config: MotorConfig):
+        self.config = config
         
+        # Get mmoi of the casing itself
+        r_inner = config.propellant_radius
+        r_outer = config.total_radius
+        self.casing_mass = config.total_mass - config.propellant_mass
+        Izz = 0.5 * self.casing_mass * (r_inner**2 + r_outer**2)
+        Ixx = 0.5 * Izz + (1.0 / 12.0) * self.casing_mass * config.length**2
+        
+        self.casing_mmoi = torch.diag(torch.tensor([Ixx, Ixx, Izz])) # (3,3)
+
+        # Casing and propellant are concentric and share the motor length, so both
+        # are centered at the motor location. The motor location is therefore the
+        # CG of the whole motor (casing + propellant) and stays fixed as it burns.
+        self.location = torch.tensor([config.motor_location.x, config.motor_location.y, config.motor_location.z])
+
+
     def get_thrust(self, t: torch.tensor) -> torch.tensor:
         """
         Return the thrust in Newtons for a given timepoint. Uses interpolation from:
@@ -74,18 +88,65 @@ class Motor:
         impulse_cum = torch.where(c1, P1 + offset1, impulse_cum)
         impulse_cum = torch.where(c2, P2 + offset2, impulse_cum)
         impulse_cum = torch.where(c3, P3 + offset3, impulse_cum)
-        impulse_cum = torch.where(t >= 3.4, torch.full_like(t, self.total_impulse), impulse_cum)
+        impulse_cum = torch.where(t >= 3.4, torch.full_like(t, self.config.total_impulse), impulse_cum)
 
         return impulse_cum.to(orig_dtype)
 
     def get_fraction_burned(self, t: torch.tensor):
         impulse_cum = self.get_cumulative_impulse(t)
-        return torch.clamp(input=impulse_cum / self.total_impulse, min=0.0, max=1.0)
+        return torch.clamp(input=impulse_cum / self.config.total_impulse, min=0.0, max=1.0)
     
     def get_prop_mass(self, t: torch.tensor) -> torch.Tensor:
         fraction_burned = self.get_fraction_burned(t)
-        return self.prop_mass * (1 - fraction_burned)
+        return self.config.propellant_mass * (1 - fraction_burned)
     
+    def get_motor_mass(self, t: torch.Tensor) -> torch.Tensor:
+        prop_mass = self.get_prop_mass(t)
+        return prop_mass + self.casing_mass
+    
+    def _get_prop_inner_radius(self, t: torch.Tensor) -> torch.Tensor:
+        """
+        Propellant burns from the inside out. Get's how much the radius from inside to the outside of 
+        propellant has burned at time t
+        
+        Args:
+            t (tensor): the current time (B, 1)
+            
+        Returns: a tensor representing the radius of the propellant at time t in meters (B, 1)
+        """
+        fraction_burned = self.get_fraction_burned(t)
+        # Volume burned is prop to fraction burned
+        return torch.sqrt(fraction_burned) * self.config.propellant_radius
+    
+    def get_propellant_mmoi(self, t: torch.Tensor) -> torch.Tensor:
+        prop_mass = self.get_prop_mass(t) # (B, 1)
+        inner_radius = self._get_prop_inner_radius(t) # (B, 1)
+        
+        
+        # Izz = 1/2m(t)(r_inner(t)^2 + r_outer^2)
+        Izz = 0.5 * prop_mass * (inner_radius**2 + self.config.propellant_radius**2)
+        
+        Ixx = 0.5 * Izz + (1.0 / 12.0) * prop_mass * self.config.length**2 # (B, 1)
+        
+        return torch.diag_embed(torch.cat([Ixx, Ixx, Izz], dim=-1))
+
+    def get_cg(self, t: torch.Tensor) -> torch.Tensor:
+        """CG of the whole motor (casing + propellant) in body coordinates, (B, 3).
+
+        Casing and propellant are concentric and co-length, both centered at the
+        motor location, so the motor CG is fixed at that location as it burns.
+        """
+        return self.location.expand(*t.shape[:-1], 3)
+
+    def get_mmoi(self, t: torch.Tensor) -> torch.Tensor:
+        """Inertia tensor of the whole motor about its own CG, (B, 3, 3).
+
+        Casing and propellant share the motor CG, so each component's inertia is
+        already referenced to that point and they sum directly (no internal shift).
+        """
+        return self.casing_mmoi + self.get_propellant_mmoi(t)
+
+
     def get_mass(self, t: torch.tensor) -> torch.tensor:
         """
         Calculate the current mass of the rocket motor at time t.
@@ -97,7 +158,7 @@ class Motor:
         """
         m_prop_remaining = self.get_prop_mass(t)
 
-        return (self.total_mass - self.prop_mass) + m_prop_remaining
+        return (self.config.total_mass - self.config.propellant_mass) + m_prop_remaining
     
     
         

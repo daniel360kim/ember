@@ -45,16 +45,18 @@ class MotorConfig:
     total_impulse: float
     total_mass: float
     motor_location: LocationConfig
+    propellant_radius: float # radius of the propellant in m
+    total_radius: float # radius of the entire motor
+    length: float
     
 @dataclass
 class VehicleConfig:
     vehicle_mass: float
     motor: MotorConfig
     aero: AeroConfig
-    cg_wet: LocationConfig
-    cg_dry: LocationConfig
+    cg_airframe: LocationConfig
     cp: LocationConfig
-    mmoi: MomentInertiaConfig
+    mmoi_airframe: MomentInertiaConfig
     gimbal_config: GimbalConfig
     nose_cone: NoseConeConfig | None = None
     body_tube: BodyTubeConfig | None = None
@@ -69,13 +71,15 @@ class VehicleConfig:
                        propellant_mass = data["motor"]["propellant_mass"],
                        total_impulse = data["motor"]["total_impulse"],
                        total_mass = data["motor"]["total_mass"],
-                       motor_location = LocationConfig(**data["motor"]["location"])
+                       motor_location = LocationConfig(**data["motor"]["location"]),
+                       propellant_radius = data["motor"]["propellant_radius"],
+                       total_radius = data["motor"]["total_radius"],
+                       length = data["motor"]["length"],
                     ),
                    aero = AeroConfig(**data["aero"]),
-                   cg_wet = LocationConfig(**data["cg_wet"]),
-                   cg_dry = LocationConfig(**data["cg_dry"]),
+                   cg_airframe = LocationConfig(**data["cg_airframe"]),
                    cp = LocationConfig(**data["cp"]),
-                   mmoi = MomentInertiaConfig(**data["mmoi"]),
+                   mmoi_airframe = MomentInertiaConfig(**data["mmoi_airframe"]),
                    gimbal_config = GimbalConfig(
                        tau = data["gimbal"]["tau"],
                        angle_limit_deg = data["gimbal"]["angle_limit_deg"],

@@ -1,9 +1,19 @@
 vehicle_mass_dry: 1.0
-propellant_mass: 0.060
+
+# Airframe-only mass moment of inertia, about the airframe CG, measured with the
+# motor removed (the motor's inertia is synthesized separately from its geometry).
+mmoi_airframe:
+  Ixx: 0.015
+  Iyy: 0.015
+  Izz: 0.002
+
 motor:
   propellant_mass: 0.060
   total_impulse: 48.792775090871146
   total_mass: 0.103
+  propellant_radius: 0.0115 # radius of the propellant in m
+  total_radius: 0.0145 # radius of propellant + casing
+  length: 0.114
   # Location relative to the very bottom of the rocket
   location: 
     x: 0
@@ -19,35 +29,25 @@ gimbal:
     y: 0
     z: 0.05
 
-
-
 aero:
   air_density: 1.225
   drag_coeff: 0.35
   normal_force_coeff: 2
   pitch_damping_coeff: -0.1
 
-# Relative to the very bottom of the rocket
-cg_wet:
+# Airframe-only CG (motor removed), relative to the very bottom of the rocket.
+# The loaded/dry vehicle CG is derived by combining this with the motor body.
+cg_airframe:
   x: 0
   y: 0
-  z: 0.531
-
-cg_dry:
-  x: 0
-  y: 0
-  z: 0.558
+  z: 0.580
 
 cp:
   x: 0
   y: 0
   z: 0.20
   
-# mass moment of inertia in kg*m^2
-mmoi:
-  Ixx: 0.015
-  Iyy: 0.015
-  Izz: 0.002
+
 
 nose_cone:
   type: conical

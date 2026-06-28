@@ -1,6 +1,13 @@
-from dataclasses import dataclass
 import torch
 
+from dataclasses import dataclass
+
+class S:
+    POS = slice(0, 3)
+    ORI = slice(3, 7)
+    VEL = slice(7, 10)
+    ANG_VEL = slice(10, 13)
+    GIMBAL_ANGLE = slice(13, 15)
 @dataclass
 class State:
     position: torch.tensor # (3,)
@@ -8,7 +15,6 @@ class State:
     velocity: torch.tensor # (3, )
     angular_velocity: torch.tensor # (3, )
     gimbal_angle: torch.tensor # (2, )
-    
     
     extras: dict[str, torch.tensor]
     

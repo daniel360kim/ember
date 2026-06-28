@@ -10,16 +10,12 @@ class Aero(Component):
                  aero: AeroConfig,
                  nose_cone_config: NoseConeConfig, body_tube_config: BodyTubeConfig,
                  cp: LocationConfig,
-                 mmoi: MomentInertiaConfig
                  ):
         self.aero_config = aero
         self.nose_cone_config = nose_cone_config
         self.body_tube_config = body_tube_config
         
         self.cp = torch.tensor([cp.x, cp.y, cp.z])
-        
-        self.I = torch.diag(torch.tensor([mmoi.Ixx, mmoi.Iyy, mmoi.Izz]))
-        
         self.ref_area = np.pi * nose_cone_config.radius ** 2 # for normal force calculation
         
         self.aoa_warned = False # printed a warning if aoa is greater than approximation threshold

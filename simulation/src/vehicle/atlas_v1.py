@@ -5,51 +5,36 @@ from vehicle.base_vehicle import BaseVehicle
 from vehicle.components.cartesian_gimbal import CartesianGimbal
 from vehicle.components.motor import Motor
 from vehicle.components.aero import Aero
-from vehicle.config import VehicleConfig, MomentInertiaConfig, LocationConfig
+from vehicle.config import VehicleConfig
+from vehicle.state import S
+from vehicle.mass_properties import MassProperties
 from utils.math import quat_deriv, quat_rotate, quat_inv
 
-G = 9.80665 # todo, move to config file 
+
 
 class Atlas(BaseVehicle):
-    def __init__(self, mass_airframe: float, gimbal: CartesianGimbal, aero: Aero, mmoi: MomentInertiaConfig, cg_wet: LocationConfig, cg_dry: LocationConfig):
+    def __init__(self, mass_properties: MassProperties, gimbal: CartesianGimbal, aero: Aero):
         super().__init__()
         
-        self.mass_airframe = mass_airframe
         self.gimbal = gimbal
         self.aero = aero
         
-        self.I = torch.diag(torch.tensor([mmoi.Ixx, mmoi.Iyy, mmoi.Izz]))
-        self.I_inv = torch.linalg.inv(self.I)
-        
-        self.cg_wet = torch.tensor([cg_wet.x, cg_wet.y, cg_wet.z])
-        self.cg_dry = torch.tensor([cg_dry.x, cg_dry.y, cg_dry.z])
-        
-        mass_motor_dry =  self.gimbal.motor.total_mass - self.gimbal.motor.prop_mass
-        self.mass_dry_total = mass_airframe + mass_motor_dry # Vehicle + motor casing (no prop)
-        self.mass_wet_total = self.mass_dry_total + self.gimbal.motor.prop_mass # Everyhting including prop
-        
-        # Center of gravity of the propellant
-        self.cg_prop = (self.mass_wet_total * self.cg_wet - self.mass_dry_total * self.cg_dry) / self.gimbal.motor.prop_mass # (3)
+        self.mass_properties = mass_properties
         
     def dynamics(self, X: torch.tensor, U: torch.tensor, t: torch.tensor):
-        mass_motor_current = self.gimbal.motor.get_mass(t)
+        position = X[..., S.POS]
+        velocity = X[..., S.VEL]
+        orientation_quat = X[..., S.ORI]
+        ang_vel = X[..., S.ANG_VEL]
+        gimbal_angle = X[..., S.GIMBAL_ANGLE]
         
-        mass_total_current = mass_motor_current + self.mass_airframe  
-        position = X[..., 0:3]
-        velocity = X[..., 7:10]
-        orientation_quat = X[..., 3:7]
-        ang_vel = X[..., 10:13]
-        gimbal_angle = X[..., 13:15]
-        
-        cg = self.get_cg(mass_motor_current, t)
         aero_wrench = self.aero.get_wrench(X, t)
         gimbal_wrench = self.gimbal.get_wrench(X, t)
         
         wrenches = [aero_wrench, gimbal_wrench]
-        
+        force_gravity, mass, cg, mmoi = self.mass_properties.get_dynamics(t)
         # Net force
-        F_grav = torch.cat([torch.zeros_like(mass_total_current), torch.zeros_like(mass_total_current), -mass_total_current * G], dim=-1)
-        F_net = F_grav + sum(wrench.force_world for wrench in wrenches)
+        F_net = force_gravity + sum(wrench.force_world for wrench in wrenches)
         
         # Net torque
         torque = sum(
@@ -59,9 +44,9 @@ class Atlas(BaseVehicle):
             for wrench in wrenches if wrench.application_point_body is not None
         ) + sum(w.moment_body for w in wrenches if w.moment_body is not None)
 
-        accel = F_net / mass_total_current
+        accel = F_net / mass
         
-        ang_accel = self._get_ang_accel(angular_vel=ang_vel, net_torque=torque)
+        ang_accel = self._get_ang_accel(angular_vel=ang_vel, net_torque=torque, mmoi=mmoi)
         
         # If rocket is sitting on the ground
         accel_clamped = torch.clamp(accel[..., 2], min=0.0)
@@ -77,41 +62,31 @@ class Atlas(BaseVehicle):
         
         return torch.cat((velocity, q_deriv, accel, ang_accel, gimbal_delta), dim=-1)
     
-    def _get_ang_accel(self, angular_vel: torch.tensor, net_torque: torch.tensor) -> torch.tensor:
-        I_omega = angular_vel @ self.I.T
+    def _get_ang_accel(self, angular_vel: torch.tensor, net_torque: torch.tensor, mmoi: torch.Tensor) -> torch.tensor:
+        angular_vel = angular_vel.unsqueeze(-2) # (B, 1, 3)
+        net_torque = net_torque.unsqueeze(-2) # (B, 1, 3)
+        I_omega = torch.matmul(angular_vel, mmoi.transpose(-1, -2))
         gyro = torch.cross(angular_vel, I_omega, dim=-1)
         net_torque = net_torque - gyro
-        return net_torque @ self.I_inv.T
+        return torch.matmul(net_torque, torch.linalg.inv(mmoi).transpose(-1, -2)).squeeze(-2)
     
-    def get_cg(self, mass_motor_current: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
-        cg_dry = self.cg_dry.expand(*t.shape[:-1], 3)
-        
-        mass_prop_current = self.gimbal.motor.get_prop_mass(t)
-        
-        mass_total_current = mass_motor_current + self.mass_airframe
-        return (self.mass_dry_total * cg_dry + mass_prop_current * self.cg_prop) / mass_total_current
-
     def get_extras(self, t):
-        mass_motor_current = self.gimbal.motor.get_mass(t)
-        mass_total_current = mass_motor_current + self.mass_airframe
-        
         thrust = self.gimbal.motor.get_thrust(t)
-        
-        cg = self.get_cg(mass_motor_current, t)
-        
+        _, mass, cg, mmoi = self.mass_properties.get_dynamics(t)
         return {
-            "total_mass": mass_total_current,
+            "total_mass": mass,
             "thrust": thrust,
             "cg": cg,
+            "mmoi": mmoi,
         }
         
 def build_vehicle(config: VehicleConfig) -> Atlas:
-    motor = Motor(name="F15", total_impulse=config.motor.total_impulse, total_mass=config.motor.total_mass, prop_mass=config.motor.propellant_mass) # TODO allow for different motors from a registry
+    motor = Motor(config.motor)
     gimbal = CartesianGimbal(gimbal_config=config.gimbal_config, motor=motor)
     aero = Aero(aero=config.aero,
                 nose_cone_config=config.nose_cone, body_tube_config=config.body_tube, 
-                cp=config.cp, mmoi=config.mmoi)
-    
-    return Atlas(config.vehicle_mass, gimbal=gimbal, aero=aero, mmoi=config.mmoi, cg_wet=config.cg_wet, cg_dry=config.cg_dry)
+                cp=config.cp)
+    mass_properties = MassProperties(mass_airframe=config.vehicle_mass, motor=motor, cg_airframe=config.cg_airframe, mmoi_airframe=config.mmoi_airframe)
+    return Atlas(mass_properties=mass_properties, gimbal=gimbal, aero=aero)
     
     

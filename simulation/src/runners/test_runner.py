@@ -77,12 +77,13 @@ if __name__ == "__main__":
     masses = history.get_extra_history(key="total_mass")[:,0]
     thrusts = history.get_extra_history(key="thrust")[:,0]
     cgs = history.get_extra_history(key="cg")[:,0]
+    mmois = np.diagonal(history.get_extra_history(key="mmoi")[:,0], axis1=1, axis2=2) # (T, 3): [Ixx, Iyy, Izz]
     apogee = np.max(positions[:,2])
     
 
     print(f"Rocket reached apogee of {apogee} m")
     
-    fig, ax = plt.subplots(nrows=4, ncols=2)
+    fig, ax = plt.subplots(nrows=5, ncols=2)
 
     ax[0, 0].plot(np.linspace(0, duration, len(positions[:,0])), positions[:,0], label="X")
     ax[0, 0].plot(np.linspace(0, duration, len(positions[:,1])), positions[:,1], label="Y")
@@ -133,12 +134,20 @@ if __name__ == "__main__":
     ax[3, 0].set_xlabel('Time (s)')
     ax[3, 0].set_ylabel('Angle (deg)')
     
-    ax[3, 1].plot(np.linspace(0, duration, len(cgs[:,2])), cgs[:,2])
-    ax[3, 1].set_title('Center of gravity (z)')
-    ax[3, 1].set_xlabel('Time (s)')
-    ax[3, 1].set_ylabel('Cg (z) (m)')
+    ax[4, 0].plot(np.linspace(0, duration, len(cgs[:,2])), cgs[:,2])
+    ax[4, 0].set_title('Center of gravity (z)')
+    ax[4, 0].set_xlabel('Time (s)')
+    ax[4, 0].set_ylabel('Cg (z) (m)')
     
-    plt.tight_layout()
+    
+    t_mmoi = np.linspace(0, duration, len(mmois))
+    ax[4, 1].plot(t_mmoi, mmois[:,0], label="Ixx")
+    ax[4, 1].plot(t_mmoi, mmois[:,1], label="Iyy")
+    ax[4, 1].plot(t_mmoi, mmois[:,2], label="Izz")
+    ax[4, 1].legend()
+    ax[4, 1].set_title('MMOI (diagonal)')
+    ax[4, 1].set_xlabel('Time (s)')
+    ax[4, 1].set_ylabel('Inertia (kg·m²)')
     plt.show()
 
 
