@@ -1,10 +1,11 @@
 import torch
 
+from vehicle.state import S
 from policy.base_policy import Policy
 from utils.math import quat_mul, quat_inv, normalize_quat
 
 class PID(Policy):
-    def __init__(self, Kp=1.8, Ki=0.01, Kd=0.3, dt=1.0/30.0):
+    def __init__(self, Kp=3.5, Ki=0.3, Kd=0.5, dt=1.0/30.0):
         self.Kp = Kp
         self.Ki = Ki
         self.Kd = Kd
@@ -22,8 +23,8 @@ class PID(Policy):
         self.i_accum_initialized = False
     
     def forward(self, X, setpoint):
-        q  = normalize_quat(X[..., 3:7])
-        w_b = X[..., 10:13]
+        q  = normalize_quat(X[..., S.ORI])
+        w_b = X[..., S.ANG_VEL]
         setpoint = normalize_quat(setpoint.expand(*q.shape[:-1], 4))
         
 

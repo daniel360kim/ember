@@ -13,7 +13,8 @@ def _state(i):
         orientation_quat=quat_identity(),
         velocity=torch.tensor([0.0, 0.0, float(i)]),
         angular_velocity=torch.tensor([0.0, 0.0, 0.1 * i]),
-        mass=torch.tensor(1.0 - 0.01 * i),
+        gimbal_angle=torch.zeros(2),
+        extras={"total_mass": torch.tensor(1.0 - 0.01 * i)},
     )
 
 
@@ -56,12 +57,12 @@ def test_euler_history_identity_is_zero(history):
     # all states use the identity quaternion -> zero euler angles
     np.testing.assert_allclose(history.get_orientation_euler_history(), 0.0, atol=1e-6)
 
-def test_mass_history_shape(history):
-    mass = history.get_mass_history()
+def test_extra_history_shape(history):
+    mass = history.get_extra_history("total_mass")
     assert mass.shape == (5,)
 
-def test_mass_history_values(history):
-    mass = history.get_mass_history()
+def test_extra_history_values(history):
+    mass = history.get_extra_history("total_mass")
     np.testing.assert_allclose(mass, [1.0, 0.99, 0.98, 0.97, 0.96], rtol=1e-5)
 
 
@@ -74,6 +75,7 @@ def test_history_detaches_gradients():
         orientation_quat=quat_identity(),
         velocity=torch.zeros(3),
         angular_velocity=torch.zeros(3),
-        mass=torch.tensor(1.0),
+        gimbal_angle=torch.zeros(2),
+        extras={"total_mass": torch.tensor(1.0)},
     ))
     np.testing.assert_allclose(h.get_position_history(), np.zeros((1, 3)))

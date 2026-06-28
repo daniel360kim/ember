@@ -1,6 +1,7 @@
 import torch
 import numpy as np
 
+from vehicle.state import S
 from vehicle.components.base_component import Component, Wrench
 from vehicle.components.motor import Motor
 from vehicle.config import LocationConfig, GimbalConfig
@@ -17,8 +18,8 @@ class CartesianGimbal(Component):
         self.gimbal_location = torch.tensor([gimbal_location.x, gimbal_location.y, gimbal_location.z])
         
     def get_wrench(self, X: torch.tensor, t: torch.tensor) -> Wrench:
-        orientation_quat = X[..., 3:7]
-        gimbal_state = X[..., 13:15]
+        orientation_quat = X[..., S.ORI]
+        gimbal_state = X[..., S.GIMBAL_ANGLE]
         thrust_body = self.get_thrust_body(gimbal_state, t)
         thrust_world = quat_rotate(orientation_quat, thrust_body) 
         

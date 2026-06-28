@@ -6,6 +6,7 @@ from tqdm import tqdm
 from vehicle.atlas_v1 import Atlas, build_vehicle
 from vehicle.config import VehicleConfig
 from vehicle.integrators import euler_step, rk4_step
+from vehicle.state import S
 
 from policy.base_policy import Policy
 from policy.pid import PID
@@ -13,7 +14,7 @@ from runners.history import SimulationHistory
 
 from utils.math import euler_to_quat, quat_identity
 
-class TestRunner:
+class SimulationRunner:
     def __init__(self, duration: float, dt: float, config_path: str, policy: Policy, policy_dt: float):
         self.duration = duration
         self.dt = dt
@@ -33,11 +34,10 @@ class TestRunner:
         self.current_steps_taken = 0
         
         
-        
     def run(self):
         start_orientation = euler_to_quat(torch.tensor([np.deg2rad(3), np.deg2rad(5), np.deg2rad(0)]))
-        X_current = torch.zeros(1, 15)
-        X_current[..., 3:7] = start_orientation
+        X_current = torch.zeros(1, S.DIM)
+        X_current[..., S.ORI] = start_orientation
     
         solver = rk4_step
         history = SimulationHistory()
@@ -51,12 +51,13 @@ class TestRunner:
                 state = self.vehicle.get_state(X_current, self.current_time)
                 if self.current_steps_taken % self.steps_per_policy == 0:
                     U = self.policy.forward(X_current, setpoint)
-
-                X_current = solver(self.vehicle.dynamics, X_current, U, self.current_time, self.dt)
+                
+                X_current = solver(self.vehicle.dynamics, X_current, U, self.current_time, self.dt, project=self.vehicle.project)
 
 
                 history.add(state)
                 self.current_time += self.dt
+                self.current_steps_taken += 1
                 pbar.update(1)
 
         return history
@@ -65,7 +66,7 @@ class TestRunner:
 if __name__ == "__main__":
     duration = 3.4
     policy = PID(dt=0.01)
-    runner = TestRunner(duration, dt=0.001, config_path="configs/vehicles/atlas.yaml", policy=policy, policy_dt=0.01)
+    runner = SimulationRunner(duration, dt=0.001, config_path="configs/vehicles/atlas.yaml", policy=policy, policy_dt=0.01)
 
     history = runner.run()
     

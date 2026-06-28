@@ -1,21 +1,35 @@
+from typing import Callable, Optional
+
 import torch
 
-from utils.math import normalize_quat
-from vehicle.base_vehicle import BaseVehicle
+DynamicsFn = Callable[[torch.Tensor, torch.Tensor, torch.Tensor], torch.Tensor]
+ProjectFn = Callable[[torch.Tensor], torch.Tensor]
 
-def euler_step(dynamics_fn: BaseVehicle.dynamics, X: torch.tensor, U: torch.tensor, t: torch.tensor, dt: float) -> torch.tensor:
-    X_new =  X + dynamics_fn(X, U, t) * dt
-    normalized_quat = normalize_quat(X_new[..., 3:7]) # quat normalization
-    return torch.cat([X_new[..., 0:3], normalized_quat, X_new[..., 7:]], dim=-1)
 
-def rk4_step(dynamics_fn: BaseVehicle.dynamics, X: torch.tensor, U: torch.tensor, t: torch.tensor, dt: float) -> torch.tensor:
+def euler_step(
+    dynamics_fn: DynamicsFn,
+    X: torch.Tensor,
+    U: torch.Tensor,
+    t: torch.Tensor,
+    dt: float,
+    project: Optional[ProjectFn] = None,
+) -> torch.Tensor:
+    X_new = X + dynamics_fn(X, U, t) * dt
+    return project(X_new) if project is not None else X_new
+
+
+def rk4_step(
+    dynamics_fn: DynamicsFn,
+    X: torch.Tensor,
+    U: torch.Tensor,
+    t: torch.Tensor,
+    dt: float,
+    project: Optional[ProjectFn] = None,
+) -> torch.Tensor:
     k1 = dynamics_fn(X, U, t)
-    k2 = dynamics_fn(X+dt/2 * k1, U, t+dt/2)
-    k3 = dynamics_fn(X+dt/2 * k2, U, t+dt/2)
-    k4 = dynamics_fn(X+dt * k3, U, t+dt)
-    
-    X_new = X + (dt / 6) * (k1 + 2 * k2 + 2 * k3 + k4)
-    normalized_quat = normalize_quat(X_new[..., 3:7]) # quat normalization
-    return torch.cat([X_new[..., 0:3], normalized_quat, X_new[..., 7:]], dim=-1)
+    k2 = dynamics_fn(X + dt / 2 * k1, U, t + dt / 2)
+    k3 = dynamics_fn(X + dt / 2 * k2, U, t + dt / 2)
+    k4 = dynamics_fn(X + dt * k3, U, t + dt)
 
-    
+    X_new = X + (dt / 6) * (k1 + 2 * k2 + 2 * k3 + k4)
+    return project(X_new) if project is not None else X_new

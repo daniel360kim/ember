@@ -25,20 +25,20 @@ Atlas`-style imports resolve without manual `PYTHONPATH` juggling.
 
 ## Running the current 1D simulation
 
-The current sim is a single-vehicle vertical (z-axis) drop/boost test, not
-yet wired to the config-driven runners described below. It lives in
-[src/runners/test_runner.py](src/runners/test_runner.py):
+The current sim is a single-vehicle 6-DOF boost test under a PID attitude
+policy, not yet wired to the config-driven runners described below. It lives in
+[src/runners/simulation_runner.py](src/runners/simulation_runner.py):
 
 ```bash
-python src/runners/test_runner.py
+python src/runners/simulation_runner.py
 ```
 
 This builds an `Atlas` vehicle ([src/vehicle/atlas_v1.py](src/vehicle/atlas_v1.py)),
-integrates its 13D state with `euler_step` for 5 seconds at `dt=0.001`, and
-plots z-position over time with matplotlib. Edit the `TestRunner(duration,
-dt)` call at the bottom of the file to change the rollout length or step
-size, and swap `solver = euler_step` for `rk4_step` to change integration
-scheme.
+integrates its 15D state with `rk4_step` over the F15 burn at `dt=0.001`, and
+plots position/attitude/mass/thrust over time with matplotlib. Edit the
+`SimulationRunner(...)` call at the bottom of the file to change the rollout
+length, step size, or policy, and swap `solver = rk4_step` for `euler_step`
+to change integration scheme.
 
 ## Project Structure
 

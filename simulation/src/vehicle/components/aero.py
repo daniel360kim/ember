@@ -1,6 +1,7 @@
 import torch
 import numpy as np
 
+from vehicle.state import S
 from vehicle.components.base_component import Component, Wrench
 from vehicle.config import NoseConeConfig, BodyTubeConfig, AeroConfig, LocationConfig, MomentInertiaConfig
 from utils.math import quat_rotate, quat_inv
@@ -21,9 +22,9 @@ class Aero(Component):
         self.aoa_warned = False # printed a warning if aoa is greater than approximation threshold
         
     def get_wrench(self, X: torch.tensor, t: torch.tensor) -> Wrench:
-        orientation_quat = X[..., 3:7]
-        velocity = X[..., 7:10]
-        angular_vel = X[..., 10:13]
+        orientation_quat = X[..., S.ORI]
+        velocity = X[..., S.VEL]
+        angular_vel = X[..., S.ANG_VEL]
         
         # Get unit body axis vector
         up = torch.tensor([0., 0, 1.]).expand(*orientation_quat.shape[:-1], 3)

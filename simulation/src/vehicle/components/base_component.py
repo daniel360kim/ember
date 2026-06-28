@@ -14,8 +14,6 @@ class Wrench:
     application_point_body: Optional[torch.Tensor] # (B,3) body-fixed offset (for lever arm)
     moment_body: Optional[torch.Tensor] # Direct moment (damping, gyroscopic) - no lever arm
     
-    
-
 class Component(ABC):
     def __init__(self):
         pass

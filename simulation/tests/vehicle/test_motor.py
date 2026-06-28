@@ -5,17 +5,17 @@ from vehicle.components.motor import Motor
 
 
 @pytest.fixture
-def motor():
-    return Motor()
+def motor(config):
+    # The F15 motor built from configs/vehicles/atlas.yaml (see tests/conftest.py).
+    return Motor(config.motor)
 
 
-# --- defaults / metadata ---
+# --- metadata ---
 
-def test_default_is_f15(motor):
-    assert motor.name == 'F15'
-    assert motor.total_impulse == pytest.approx(48.792775090871146)
-    assert motor.total_mass == pytest.approx(0.103)
-    assert motor.prop_mass == pytest.approx(0.060)
+def test_config_matches_f15(motor):
+    assert motor.config.total_impulse == pytest.approx(48.792775090871146)
+    assert motor.config.total_mass == pytest.approx(0.103)
+    assert motor.config.propellant_mass == pytest.approx(0.060)
 
 
 # --- get_thrust ---

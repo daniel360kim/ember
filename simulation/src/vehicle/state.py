@@ -8,6 +8,7 @@ class S:
     VEL = slice(7, 10)
     ANG_VEL = slice(10, 13)
     GIMBAL_ANGLE = slice(13, 15)
+    DIM = 15  # full state-vector width
 @dataclass
 class State:
     position: torch.tensor # (3,)
@@ -24,10 +25,10 @@ class State:
     @classmethod
     def from_tensor(cls, X: torch.tensor, extras: dict[str, torch.tensor]):
         return cls(
-            position = X[..., 0:3],
-            orientation_quat = X[..., 3:7],
-            velocity = X[..., 7:10],
-            angular_velocity = X[..., 10:13],
-            gimbal_angle = X[..., 13:15],
+            position = X[..., S.POS],
+            orientation_quat = X[..., S.ORI],
+            velocity = X[..., S.VEL],
+            angular_velocity = X[..., S.ANG_VEL],
+            gimbal_angle = X[..., S.GIMBAL_ANGLE],
             extras = extras,
         )
